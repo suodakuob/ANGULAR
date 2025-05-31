@@ -1,0 +1,46 @@
+{
+  "products": [
+    {
+      "id": "a834",
+      "name": "IPads",
+      "description": "Latest one",
+      "price": 7200,
+      "category": "Tabs",
+      "stock": 2
+    }
+    ,
+    {
+      "id": "b123",
+      "name": "MacBook Pro",
+      "description": "Latest model with M1 chip",
+      "price": 1500,
+      "category": "Laptops",
+      "stock": 5
+    },
+    {
+      "id": "c456",
+      "name": "iPhone 13",
+      "description": "Latest iPhone with improved camera",
+      "price": 999,
+      "category": "Phones",
+      "stock": 10
+    },
+    {
+      "id": "d789",
+      "name": "Apple Watch Series 7",
+      "description": "Smartwatch with health tracking features",
+      "price": 399,
+      "category": "Wearables",
+      "stock": 8
+    }
+    ,
+    {
+      "id": "e012",
+      "name": "AirPods Pro",
+      "description": "Wireless earbuds with noise cancellation",
+      "price": 249,
+      "category": "Audio",
+      "stock": 15
+    }
+  ]
+}

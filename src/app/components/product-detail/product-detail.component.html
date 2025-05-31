@@ -1,0 +1,55 @@
+<!-- src/app/components/product-detail/product-detail.component.html -->
+<div class="container mt-4">
+  <div *ngIf="isLoading" class="text-center">
+    <p>Chargement des détails du produit...</p>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- CE BLOC *ngIf EST CRUCIAL POUR AFFICHER LES DÉTAILS ET LES BOUTONS -->
+  <!-- ===================================================================== -->
+  <div *ngIf="!isLoading && product">
+    <div class="row">
+      <div class="col-md-6"> <!-- Colonne pour l'image -->
+        <img *ngIf="product.imageUrl" [src]="product.imageUrl" class="img-fluid rounded" alt="{{ product.name }}" />
+        <div *ngIf="!product.imageUrl" class="text-center bg-light p-5 rounded">
+          <span class="text-muted fs-3">Pas d'image disponible</span>
+        </div>
+      </div>
+      <div class="col-md-6"> <!-- Colonne pour les textes et les boutons -->
+        <h2>{{ product.name }}</h2>
+        <p class="lead">{{ product.description }}</p>
+        <p><strong>Prix :</strong> {{ product.price | currency:'EUR':'symbol' }}</p>
+        <p><strong>Catégorie :</strong> {{ product.category || 'Non catégorisé' }}</p>
+        <p>
+          <strong>Stock :</strong>
+          <span [ngClass]="{'text-danger fw-bold': product.stock === 0, 'text-success': product.stock && product.stock > 0}">
+            {{ product.stock === 0 ? 'Épuisé' : (product.stock || 'N/A') }}
+          </span>
+        </p>
+        <hr />
+        <button class="btn btn-outline-secondary me-2" routerLink="/products">
+          Retour à la liste
+        </button>
+        <a [routerLink]="['/product', product.id, 'edit']" class="btn btn-warning me-2"> <!-- Bouton Modifier -->
+          Modifier
+        </a>
+        <!-- ICI EST LE BOUTON SUPPRIMER -->
+        <button class="btn btn-danger" (click)="onDeleteProduct()" [disabled]="isDeleting">
+          <span *ngIf="isDeleting" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+          {{ isDeleting ? 'Suppression...' : 'Supprimer' }}
+        </button>
+      </div>
+    </div>
+  </div>
+  <!-- ===================================================================== -->
+  <!-- FIN DU BLOC *ngIf CRUCIAL -->
+  <!-- ===================================================================== -->
+
+  <div *ngIf="!isLoading && !product" class="alert alert-danger mt-3" role="alert">
+    Le produit demandé n'a pas été trouvé.
+  </div>
+  <!-- J'ajoute le message d'erreur s'il y en a un et que le produit n'est pas là -->
+  <div *ngIf="errorMessage && !isLoading && !product" class="alert alert-warning mt-3" role="alert">
+    {{ errorMessage }}
+  </div>
+</div>

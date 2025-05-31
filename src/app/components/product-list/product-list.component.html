@@ -1,0 +1,64 @@
+<!-- src/app/components/product-list/product-list.component.html -->
+<div class="container mt-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Liste des Produits</h2>
+    <a routerLink="/product/new" class="btn btn-success">
+      Ajouter un produit
+    </a>
+  </div>
+
+  <!-- État de chargement -->
+  <div *ngIf="isLoading" class="text-center my-5">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Chargement...</span>
+    </div>
+    <p>Chargement des produits...</p>
+  </div>
+
+  <!-- Message d'erreur -->
+  <div *ngIf="errorMessage && !isLoading" class="alert alert-danger" role="alert">
+    <strong>Erreur :</strong> {{ errorMessage }}
+  </div>
+
+  <!-- Aucun produit à afficher (après chargement et sans erreur) -->
+  <div *ngIf="!isLoading && !errorMessage && products.length === 0" class="alert alert-info" role="alert">
+    Aucun produit à afficher pour le moment.
+  </div>
+
+  <!-- Affichage de la liste des produits -->
+  <div class="row" *ngIf="!isLoading && !errorMessage && products.length > 0">
+    <div *ngFor="let product of products" class="col-md-4 mb-4">
+      <div class="card h-100">
+        <img
+          *ngIf="product.imageUrl"
+          [src]="product.imageUrl"
+          class="card-img-top"
+          alt="{{ product.name }}"
+          style="height: 200px; object-fit: cover;"
+        />
+        <div *ngIf="!product.imageUrl" class="card-img-top text-center bg-light" style="height: 200px; display: flex; align-items: center; justify-content: center;">
+          <span class="text-muted">Pas d'image</span>
+        </div>
+        <div class="card-body d-flex flex-column">
+          <h5 class="card-title">{{ product.name }}</h5>
+          <p class="card-text flex-grow-1">{{ product.description | slice:0:100 }}{{ product.description.length > 100 ? '...' : '' }}</p>
+          <p class="card-text">
+            <strong>Prix :</strong> {{ product.price | currency:'EUR':'symbol' }}
+          </p>
+          <p class="card-text">
+            <small class="text-muted">Catégorie : {{ product.category || 'Non catégorisé' }}</small>
+          </p>
+          <p class="card-text" [ngClass]="{'text-danger': product.stock === 0, 'text-success': product.stock && product.stock > 0}">
+            Stock : {{ product.stock === 0 ? 'Épuisé' : (product.stock || 'N/A') }}
+          </p>
+          <div class="mt-auto d-flex justify-content-between">
+            <a [routerLink]="['/product', product.id]" class="btn btn-primary btn-sm">Voir détails</a>
+            <button (click)="onDeleteProductFromList(product.id, product.name)" class="btn btn-danger btn-sm">
+              Supprimer
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
