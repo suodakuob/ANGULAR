@@ -1,1 +1,17 @@
-/* You can add global styles to this file, and also import other style files */
+/* src/styles.css */
+html, body {
+  height: 100%;
+  margin: 0;
+}
+
+/* Si tu utilises le wrapper avec d-flex dans app.component.html,
+   tu n'as peut-être pas besoin de cibler app-root directement comme ci-dessous,
+   mais cela ne fait pas de mal de s'assurer que l'application prend toute la hauteur.
+*/
+app-root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh; /* Assure que app-root prend au moins toute la hauteur de la vue */
+}
+
+/* Le reste de tes styles globaux s'il y en a */

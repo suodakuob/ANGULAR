@@ -2,13 +2,21 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { Product } from '../../models/product'; // Product.id est string
+import { Product } from '../../models/product';
 import { ProductService } from '../../services/product.service';
+import { StockStatusPipe } from '../../pipes/stock-status.pipe';
+import { NotificationService } from '../../services/notification.service';
+import { ConfirmationModalComponent } from '../confirmation-modal/confirmation-modal.component'; // <--- IMPORTÉ
 
 @Component({
   selector: 'app-product-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [
+    CommonModule,
+    RouterModule,
+    StockStatusPipe,
+    ConfirmationModalComponent // <--- AJOUTÉ AUX IMPORTS
+  ],
   templateUrl: './product-detail.component.html',
   styleUrls: ['./product-detail.component.css']
 })
@@ -18,66 +26,74 @@ export class ProductDetailComponent implements OnInit {
   errorMessage: string = '';
   isDeleting: boolean = false;
 
+  // Pour la modale de confirmation
+  showDeleteConfirmationModal: boolean = false;
+  modalMessage: string = '';
+  productToDeleteName: string = ''; // Pour stocker le nom pour le message de la modale
+
   constructor(
     private route: ActivatedRoute,
     private productService: ProductService,
-    private router: Router
+    private router: Router,
+    private notificationService: NotificationService
   ) {}
 
   ngOnInit(): void {
-    console.log('ProductDetailComponent: ngOnInit appelé.');
-    const productIdParam = this.route.snapshot.paramMap.get('id'); // Récupère l'ID comme string (ou null)
-    console.log('ProductDetailComponent: productIdParam de l URL:', productIdParam);
-
-    if (productIdParam) { // productIdParam est déjà une string (ou null)
+    const productIdParam = this.route.snapshot.paramMap.get('id');
+    if (productIdParam) {
       this.isLoading = true;
       this.errorMessage = '';
-      console.log('ProductDetailComponent: Chargement du produit avec ID:', productIdParam);
-
-      this.productService.getProductById(productIdParam).subscribe({ // Passe la string directement
+      this.productService.getProductById(productIdParam).subscribe({
         next: (data) => {
           this.product = data;
           this.isLoading = false;
-          console.log('ProductDetailComponent: Produit chargé:', this.product);
           if (!this.product) {
-            console.warn('ProductDetailComponent: Produit non trouvé par le service (données undefined).');
-            this.errorMessage = "Le produit demandé n'a pas été trouvé par le service.";
+            this.errorMessage = "Le produit demandé n'a pas été trouvé.";
+            this.notificationService.showWarning(this.errorMessage, 5000);
           }
         },
         error: (err) => {
-          this.errorMessage = err.message || `Impossible de charger le produit avec l'id ${productIdParam}.`;
           this.isLoading = false;
+          this.errorMessage = err.message || `Impossible de charger le produit avec l'id ${productIdParam}.`;
+          this.notificationService.showError(this.errorMessage);
           console.error('ProductDetailComponent: Erreur lors du chargement du produit:', err);
-        },
-        complete: () => {
-            console.log('ProductDetailComponent: Observable getProductById complété.');
         }
       });
     } else {
-      this.errorMessage = "ID du produit manquant dans l'URL.";
       this.isLoading = false;
-      console.error('ProductDetailComponent: ID du produit manquant dans l URL.');
-      this.router.navigate(['/products']); // Rediriger si pas d'ID
+      this.errorMessage = "ID du produit manquant dans l'URL.";
+      this.notificationService.showError(this.errorMessage);
+      this.router.navigate(['/products']);
     }
   }
 
-  onDeleteProduct(): void {
-    if (this.product && this.product.id) { // product.id est maintenant une string
-      if (confirm(`Êtes-vous sûr de vouloir supprimer le produit "${this.product.name}" ?`)) {
-        this.isDeleting = true;
-        this.productService.deleteProduct(this.product.id).subscribe({ // product.id est une string
-          next: () => {
-            console.log(`Produit ${this.product?.name} supprimé avec succès.`);
-            this.isDeleting = false;
-            this.router.navigate(['/products']);
-          },
-          error: (err) => {
-            this.errorMessage = err.message || 'Erreur lors de la suppression du produit.';
-            this.isDeleting = false;
-            console.error(err);
-          }
-        });
-      }
+  triggerDeleteConfirmation(): void {
+    if (this.product) {
+      this.productToDeleteName = this.product.name; // Stocker le nom
+      this.modalMessage = `Êtes-vous sûr de vouloir supprimer le produit "${this.product.name}" ?`;
+      this.showDeleteConfirmationModal = true;
+    }
+  }
+
+  handleDeleteConfirmation(confirmed: boolean): void {
+    this.showDeleteConfirmationModal = false; // Toujours cacher la modale après une action
+    if (confirmed && this.product && this.product.id) {
+      this.isDeleting = true;
+      this.productService.deleteProduct(this.product.id).subscribe({
+        next: () => {
+          this.isDeleting = false;
+          // Utiliser productToDeleteName car this.product pourrait devenir undefined si on navigue trop vite
+          this.notificationService.showSuccess(`Produit "${this.productToDeleteName}" supprimé avec succès.`);
+          this.router.navigate(['/products']);
+        },
+        error: (err) => {
+          this.isDeleting = false;
+          const deleteErrorMessage = err.message || `Erreur lors de la suppression du produit "${this.productToDeleteName}".`;
+          this.notificationService.showError(deleteErrorMessage);
+          this.errorMessage = deleteErrorMessage;
+          console.error(err);
+        }
+      });
     }
   }
 }

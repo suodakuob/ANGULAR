@@ -1,19 +1,11 @@
 {
   "products": [
     {
-      "id": "a834",
-      "name": "IPads",
-      "description": "Latest one",
-      "price": 7200,
-      "category": "Tabs",
-      "stock": 2
-    }
-    ,
-    {
       "id": "b123",
-      "name": "MacBook Pro",
+      "name": "MacBook Promax",
       "description": "Latest model with M1 chip",
       "price": 1500,
+      "imageUrl": "https://web-mobile-first.s3.eu-west-3.amazonaws.com/production/apple_macbook_pro_16_2021_capture_min_c3634ab041.jpg",
       "category": "Laptops",
       "stock": 5
     },
@@ -32,8 +24,7 @@
       "price": 399,
       "category": "Wearables",
       "stock": 8
-    }
-    ,
+    },
     {
       "id": "e012",
       "name": "AirPods Pro",
@@ -41,6 +32,58 @@
       "price": 249,
       "category": "Audio",
       "stock": 15
+    },
+    {
+      "id": "a345",
+      "name": "iPad Air",
+      "description": "Lightweight tablet with A14 chip",
+      "price": 599,
+      "category": "Tablets",
+      "stock": 20
+    },
+    {
+      "id": "f678",
+      "name": "Apple TV 4K",
+      "description": "Streaming device with 4K support",
+      "price": 179,
+      "category": "TVs",
+      "stock": 12
+    },
+    {
+      "id": "g901",
+      "name": "HomePod Mini",
+      "description": "Smart speaker with Siri integration",
+      "price": 99,
+      "category": "Audio",
+      "stock": 25
+    },
+    {
+      "id": "h234",
+      "name": "Magic Keyboard",
+      "description": "Wireless keyboard with rechargeable battery",
+      "price": 99,
+      "category": "Accessories",
+      "stock": 30
+    },
+    {
+      "id": "i567",
+      "name": "Magic Mouse",
+      "description": "Wireless mouse with multi-touch surface",
+      "price": 79,
+      "category": "Accessories",
+      "stock": 40
+    },
+    {
+      "id": "j890",
+      "name": "Apple Pencil (2nd generation)",
+      "description": "Stylus for iPad with wireless charging",
+      "price": 129,
+      "category": "Accessories",
+      "stock": 18
     }
+    
+    
+    
+
   ]
 }

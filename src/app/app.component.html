@@ -1,6 +1,39 @@
 <!-- src/app/app.component.html -->
-<div class="container mt-4">
-  <h1>Bienvenue sur le Gestionnaire de Produits</h1>
-  <p>Notre super application Angular avec Bootstrap !</p>
-  <router-outlet></router-outlet>
+<app-notification></app-notification>
+
+<!-- Ajout d'un wrapper pour aider au "sticky footer" -->
+<div class="d-flex flex-column min-vh-100"> <!-- Assure que ce div prend au moins toute la hauteur de la vue -->
+  <header class="mb-3">
+    <!-- Tu pourrais mettre une barre de navigation Bootstrap ici si tu le souhaites -->
+    <!-- Exemple simple de barre de navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+      <div class="container-fluid">
+        <a class="navbar-brand" routerLink="/products">Gestion Produits</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav">
+            <li class="nav-item">
+              <a class="nav-link" routerLink="/products" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">Liste Produits</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" routerLink="/product/new" routerLinkActive="active">Ajouter Produit</a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <main class="container mt-4 mb-5 flex-grow-1"> <!-- flex-grow-1 pour que le contenu principal prenne l'espace disponible -->
+    <!-- Le titre H1 a été déplacé, car il est plus logique dans le header ou dans chaque page principale -->
+    <router-outlet></router-outlet>
+  </main>
+
+  <footer class="footer mt-auto py-3 bg-light text-center"> <!-- mt-auto pousse le footer en bas -->
+    <div class="container">
+      <span class="text-muted">footer tkhrbi9a</span>
+    </div>
+  </footer>
 </div>

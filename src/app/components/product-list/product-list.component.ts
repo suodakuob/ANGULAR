@@ -1,56 +1,159 @@
 // src/app/components/product-list/product-list.component.ts
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Product } from '../../models/product'; // Product.id est string
-import { ProductService } from '../../services/product.service';
 import { RouterModule } from '@angular/router';
+import { FormsModule, ReactiveFormsModule, FormControl } from '@angular/forms';
+import { Subscription } from 'rxjs';
+import { debounceTime, distinctUntilChanged, tap } from 'rxjs/operators';
+
+import { Product } from '../../models/product';
+import { ProductService } from '../../services/product.service';
+import { NotificationService } from '../../services/notification.service';
+import { StockStatusPipe } from '../../pipes/stock-status.pipe';
+import { ConfirmationModalComponent } from '../confirmation-modal/confirmation-modal.component'; // <--- IMPORTÉ
 
 @Component({
   selector: 'app-product-list',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [
+    CommonModule,
+    RouterModule,
+    FormsModule,
+    ReactiveFormsModule,
+    StockStatusPipe,
+    ConfirmationModalComponent // <--- AJOUTÉ AUX IMPORTS
+  ],
   templateUrl: './product-list.component.html',
   styleUrls: ['./product-list.component.css']
 })
-export class ProductListComponent implements OnInit {
-  products: Product[] = [];
+export class ProductListComponent implements OnInit, OnDestroy {
+  productsToDisplay: Product[] = [];
+  allProductsMaster: Product[] = [];
+  filteredAndSortedProducts: Product[] = [];
+
   isLoading: boolean = true;
   errorMessage: string = '';
 
-  constructor(private productService: ProductService) { }
+  searchControl = new FormControl('');
+  private searchTermSub!: Subscription;
 
-  ngOnInit(): void {
+  currentSortProperty: keyof Product | '' = '';
+  currentSortDirection: 'asc' | 'desc' = 'asc';
+
+  currentPage: number = 1;
+  itemsPerPage: number = 6;
+  totalPages: number = 0;
+
+  // Pour la modale de confirmation
+  showDeleteConfirmationModal: boolean = false;
+  modalMessage: string = '';
+  productToDelete: Product | null = null; // Pour stocker le produit à supprimer
+
+  constructor(
+    private productService: ProductService,
+    private notificationService: NotificationService
+  ) { }
+
+  ngOnInit(): void { /* ... inchangé ... */
     this.loadProducts();
+    this.searchTermSub = this.searchControl.valueChanges.pipe(
+      tap(term => console.log('Terme de recherche:', term)),
+      debounceTime(300),
+      distinctUntilChanged()
+    ).subscribe(term => {
+      this.currentPage = 1;
+      this.applyFiltersSortAndPagination();
+    });
   }
-
-  loadProducts(): void {
+  ngOnDestroy(): void { /* ... inchangé ... */
+    if (this.searchTermSub) {
+      this.searchTermSub.unsubscribe();
+    }
+  }
+  loadProducts(): void { /* ... inchangé ... */
     this.isLoading = true;
     this.errorMessage = '';
     this.productService.getProducts().subscribe({
       next: (data) => {
-        this.products = data;
+        this.allProductsMaster = data;
+        this.currentPage = 1;
+        this.applyFiltersSortAndPagination();
         this.isLoading = false;
       },
       error: (err) => {
-        this.errorMessage = err.message || 'Impossible de charger les produits.';
         this.isLoading = false;
-        console.error(err);
+        this.errorMessage = err.message || 'Impossible de charger les produits.';
+        this.notificationService.showError(this.errorMessage);
       }
     });
   }
+  filterProducts(searchTerm: string): Product[] { /* ... inchangé ... */
+    const lowerCaseTerm = searchTerm.toLowerCase();
+    if (!lowerCaseTerm) return [...this.allProductsMaster];
+    return this.allProductsMaster.filter(p => p.name.toLowerCase().includes(lowerCaseTerm) || (p.category && p.category.toLowerCase().includes(lowerCaseTerm)) || (p.description && p.description.toLowerCase().includes(lowerCaseTerm)));
+  }
+  setSort(property: keyof Product): void { /* ... inchangé ... */
+    if (this.currentSortProperty === property) this.currentSortDirection = this.currentSortDirection === 'asc' ? 'desc' : 'asc';
+    else { this.currentSortProperty = property; this.currentSortDirection = 'asc'; }
+    this.currentPage = 1;
+    this.applyFiltersSortAndPagination();
+  }
+  applyFiltersSortAndPagination(): void { /* ... inchangé ... */
+    let processedProducts = this.filterProducts(this.searchControl.value || '');
+    if (this.currentSortProperty) {
+      const sortKey = this.currentSortProperty as keyof Product;
+      processedProducts.sort((a, b) => {
+        const valA = a[sortKey]; const valB = b[sortKey];
+        if ((valA === undefined || valA === null) && (valB === undefined || valB === null)) return 0;
+        if (valA === undefined || valA === null) return this.currentSortDirection === 'asc' ? 1 : -1;
+        if (valB === undefined || valB === null) return this.currentSortDirection === 'asc' ? -1 : 1;
+        let comp = 0; if (typeof valA === 'string' && typeof valB === 'string') comp = valA.localeCompare(valB);
+        else if (typeof valA === 'number' && typeof valB === 'number') comp = valA - valB;
+        return this.currentSortDirection === 'asc' ? comp : comp * -1;
+      });
+    }
+    this.filteredAndSortedProducts = processedProducts;
+    this.totalPages = Math.ceil(this.filteredAndSortedProducts.length / this.itemsPerPage);
+    if (this.totalPages > 0 && this.currentPage > this.totalPages) this.currentPage = this.totalPages;
+    else if (this.totalPages === 0) this.currentPage = 1;
+    const start = (this.currentPage - 1) * this.itemsPerPage;
+    this.productsToDisplay = this.filteredAndSortedProducts.slice(start, start + this.itemsPerPage);
+  }
+  goToPage(page: number): void { /* ... inchangé ... */
+    if (page >= 1 && page <= this.totalPages) { this.currentPage = page; this.applyFiltersSortAndPagination(); try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {} }
+  }
+  get pages(): number[] { /* ... inchangé ... */ const arr = []; for (let i = 1; i <= this.totalPages; i++) arr.push(i); return arr; }
+  trackByProductId(index: number, product: Product): string { return product.id; }
 
-  onDeleteProductFromList(productId: string, productName: string): void { // CHANGEMENT ICI: productId: number -> productId: string
-    if (confirm(`Êtes-vous sûr de vouloir supprimer le produit "${productName}" ?`)) {
-      this.productService.deleteProduct(productId).subscribe({ // productId est une string
+
+  // MODIFIÉ pour utiliser la modale
+  triggerDeleteConfirmationFromList(product: Product): void {
+    this.productToDelete = product;
+    this.modalMessage = `Êtes-vous sûr de vouloir supprimer le produit "${product.name}" ?`;
+    this.showDeleteConfirmationModal = true;
+  }
+
+  handleDeleteConfirmationFromList(confirmed: boolean): void {
+    this.showDeleteConfirmationModal = false;
+    if (confirmed && this.productToDelete) {
+      const productName = this.productToDelete.name; // Sauvegarder avant que productToDelete ne soit nullifié
+      const productId = this.productToDelete.id;
+      this.productService.deleteProduct(productId).subscribe({
         next: () => {
-          console.log(`Produit ${productName} supprimé avec succès depuis la liste.`);
-          this.loadProducts();
+          this.notificationService.show(`Produit "${productName}" supprimé.`, 'success');
+          // S'assurer que currentPage est ajustée si la dernière page devient vide
+          if (this.productsToDisplay.length === 1 && this.currentPage > 1) {
+            this.currentPage--;
+          }
+          this.loadProducts(); // Recharger pour mettre à jour la liste et la pagination
         },
         error: (err) => {
-          this.errorMessage = err.message || `Erreur lors de la suppression du produit ${productName}.`;
+          this.notificationService.show(`Erreur suppression de "${productName}": ${err.message}`, 'error');
           console.error(err);
         }
       });
     }
+    this.productToDelete = null; // Réinitialiser
   }
+  // L'ancienne onDeleteProductFromList est remplacée
 }

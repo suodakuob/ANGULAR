@@ -1,59 +1,55 @@
 <!-- src/app/components/product-list/product-list.component.html -->
 <div class="container mt-3">
+  <!-- ... (début du template avec titre, tri, ajout, recherche - inchangé) ... -->
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h2>Liste des Produits</h2>
-    <a routerLink="/product/new" class="btn btn-success">
-      Ajouter un produit
-    </a>
+    <div>
+      <div class="btn-group me-2" role="group" aria-label="Boutons de tri">
+        <button type="button" class="btn btn-sm" [ngClass]="{'btn-primary': currentSortProperty === 'name', 'btn-outline-secondary': currentSortProperty !== 'name'}" (click)="setSort('name')">
+          Trier par Nom <span *ngIf="currentSortProperty === 'name'"><i class="bi" [ngClass]="{'bi-arrow-up': currentSortDirection === 'asc', 'bi-arrow-down': currentSortDirection === 'desc'}"></i></span>
+        </button>
+        <button type="button" class="btn btn-sm" [ngClass]="{'btn-primary': currentSortProperty === 'price', 'btn-outline-secondary': currentSortProperty !== 'price'}" (click)="setSort('price')">
+          Trier par Prix <span *ngIf="currentSortProperty === 'price'"><i class="bi" [ngClass]="{'bi-arrow-up': currentSortDirection === 'asc', 'bi-arrow-down': currentSortDirection === 'desc'}"></i></span>
+        </button>
+      </div>
+      <a routerLink="/product/new" class="btn btn-success btn-sm">Ajouter un produit</a>
+    </div>
+  </div>
+  <div class="mb-3">
+    <input type="text" class="form-control" placeholder="Rechercher par nom, catégorie, description..." [formControl]="searchControl">
   </div>
 
-  <!-- État de chargement -->
+  <!-- ... (isLoading, errorMessage - inchangés) ... -->
   <div *ngIf="isLoading" class="text-center my-5">
-    <div class="spinner-border text-primary" role="status">
-      <span class="visually-hidden">Chargement...</span>
-    </div>
+    <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Chargement...</span></div>
     <p>Chargement des produits...</p>
   </div>
+  <div *ngIf="errorMessage && !isLoading" class="alert alert-danger" role="alert"><strong>Erreur :</strong> {{ errorMessage }}</div>
 
-  <!-- Message d'erreur -->
-  <div *ngIf="errorMessage && !isLoading" class="alert alert-danger" role="alert">
-    <strong>Erreur :</strong> {{ errorMessage }}
-  </div>
-
-  <!-- Aucun produit à afficher (après chargement et sans erreur) -->
-  <div *ngIf="!isLoading && !errorMessage && products.length === 0" class="alert alert-info" role="alert">
-    Aucun produit à afficher pour le moment.
-  </div>
-
-  <!-- Affichage de la liste des produits -->
-  <div class="row" *ngIf="!isLoading && !errorMessage && products.length > 0">
-    <div *ngFor="let product of products" class="col-md-4 mb-4">
+  <div class="row" *ngIf="!isLoading && !errorMessage && productsToDisplay.length > 0">
+    <div *ngFor="let product of productsToDisplay; trackBy: trackByProductId" class="col-md-4 mb-4">
       <div class="card h-100">
-        <img
-          *ngIf="product.imageUrl"
-          [src]="product.imageUrl"
-          class="card-img-top"
-          alt="{{ product.name }}"
-          style="height: 200px; object-fit: cover;"
-        />
+        <img *ngIf="product.imageUrl" [src]="product.imageUrl" class="card-img-top" alt="{{ product.name }}" style="height: 200px; object-fit: cover;" />
         <div *ngIf="!product.imageUrl" class="card-img-top text-center bg-light" style="height: 200px; display: flex; align-items: center; justify-content: center;">
           <span class="text-muted">Pas d'image</span>
         </div>
         <div class="card-body d-flex flex-column">
           <h5 class="card-title">{{ product.name }}</h5>
           <p class="card-text flex-grow-1">{{ product.description | slice:0:100 }}{{ product.description.length > 100 ? '...' : '' }}</p>
-          <p class="card-text">
-            <strong>Prix :</strong> {{ product.price | currency:'EUR':'symbol' }}
-          </p>
-          <p class="card-text">
-            <small class="text-muted">Catégorie : {{ product.category || 'Non catégorisé' }}</small>
-          </p>
-          <p class="card-text" [ngClass]="{'text-danger': product.stock === 0, 'text-success': product.stock && product.stock > 0}">
-            Stock : {{ product.stock === 0 ? 'Épuisé' : (product.stock || 'N/A') }}
+          <p class="card-text"><strong>Prix :</strong> {{ product.price | currency:'EUR':'symbol' }}</p>
+          <p class="card-text"><small class="text-muted">Catégorie : {{ product.category || 'Non catégorisé' }}</small></p>
+          <p class="card-text" [ngClass]="{
+               'text-danger fw-bold': product.stock === 0,
+               'text-warning': product.stock !== undefined && product.stock !== null && product.stock > 0 && product.stock <= 5,
+               'text-success': product.stock !== undefined && product.stock !== null && product.stock > 5,
+               'text-secondary': product.stock === null || product.stock === undefined
+             }">
+            Stock : {{ product.stock | stockStatus }}
           </p>
           <div class="mt-auto d-flex justify-content-between">
             <a [routerLink]="['/product', product.id]" class="btn btn-primary btn-sm">Voir détails</a>
-            <button (click)="onDeleteProductFromList(product.id, product.name)" class="btn btn-danger btn-sm">
+            <!-- MODIFIÉ : Bouton appelle triggerDeleteConfirmationFromList -->
+            <button (click)="triggerDeleteConfirmationFromList(product)" class="btn btn-danger btn-sm">
               Supprimer
             </button>
           </div>
@@ -61,4 +57,28 @@
       </div>
     </div>
   </div>
+
+  <!-- ... (message "Aucun produit" et pagination - inchangés) ... -->
+  <div *ngIf="!isLoading && !errorMessage && productsToDisplay.length === 0">
+    <div *ngIf="allProductsMaster.length === 0" class="alert alert-info">La liste des produits est vide. Pensez à en ajouter !</div>
+    <div *ngIf="allProductsMaster.length > 0 && (searchControl.value || currentSortProperty)" class="alert alert-info">Aucun produit ne correspond à vos critères de recherche ou de tri.</div>
+  </div>
+  <nav *ngIf="!isLoading && !errorMessage && totalPages > 1" aria-label="Pagination des produits" class="mt-4 d-flex justify-content-center">
+    <ul class="pagination">
+      <li class="page-item" [class.disabled]="currentPage === 1"><a class="page-link" href="javascript:void(0)" (click)="goToPage(currentPage - 1)" aria-label="Précédent"><span aria-hidden="true">«</span></a></li>
+      <li class="page-item" *ngFor="let pageNum of pages" [class.active]="pageNum === currentPage"><a class="page-link" href="javascript:void(0)" (click)="goToPage(pageNum)">{{ pageNum }}</a></li>
+      <li class="page-item" [class.disabled]="currentPage === totalPages"><a class="page-link" href="javascript:void(0)" (click)="goToPage(currentPage + 1)" aria-label="Suivant"><span aria-hidden="true">»</span></a></li>
+    </ul>
+  </nav>
 </div>
+
+<!-- MODALE DE CONFIRMATION POUR LA LISTE -->
+<app-confirmation-modal
+  *ngIf="showDeleteConfirmationModal"
+  title="Confirmation de Suppression"
+  [message]="modalMessage"
+  confirmButtonText="Oui, supprimer"
+  cancelButtonText="Annuler"
+  confirmButtonClass="btn-danger"
+  (confirmed)="handleDeleteConfirmationFromList($event)">
+</app-confirmation-modal>

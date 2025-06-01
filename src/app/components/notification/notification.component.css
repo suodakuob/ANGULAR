@@ -1,0 +1,17 @@
+/* src/app/components/notification/notification.component.css */
+.notification-toast {
+  position: fixed; /* Position fixe par rapport à la fenêtre du navigateur */
+  top: 70px;      /* Un peu en dessous de la navbar si tu en as une */
+  right: 20px;
+  z-index: 1055;  /* Au-dessus de la plupart des éléments (modales Bootstrap sont à 1050-1060) */
+  min-width: 250px;
+  max-width: 400px; /* Évite qu'il ne soit trop large */
+  box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.1); /* Ombre portée */
+  border-radius: 0.25rem;
+  padding: 1rem; /* Un peu plus de padding */
+}
+
+/* Ajustement pour le bouton de fermeture dans les alertes */
+.notification-toast .btn-close {
+  padding: 0.5rem; /* Rend le clic plus facile */
+}

@@ -1,0 +1,7 @@
+<!-- src/app/components/notification/notification.component.html -->
+<div *ngIf="notification" class="notification-toast alert" [ngClass]="getAlertClass(notification.type)" role="alert">
+  <div class="d-flex justify-content-between align-items-center">
+    <span>{{ notification.message }}</span>
+    <button type="button" class="btn-close ms-2" (click)="closeNotification()" aria-label="Close"></button>
+  </div>
+</div>

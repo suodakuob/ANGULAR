@@ -3,8 +3,9 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { Product } from '../../models/product'; // Product.id est string
+import { Product } from '../../models/product';
 import { ProductService } from '../../services/product.service';
+import { NotificationService } from '../../services/notification.service'; // IMPORTÉ
 
 @Component({
   selector: 'app-product-form',
@@ -20,7 +21,7 @@ import { ProductService } from '../../services/product.service';
 export class ProductFormComponent implements OnInit {
   productForm!: FormGroup;
   isEditMode: boolean = false;
-  productIdToEdit: string | null = null; // CHANGEMENT ICI: number | null -> string | null
+  productIdToEdit: string | null = null;
   isLoading: boolean = true;
   pageTitle: string = 'Chargement...';
 
@@ -28,16 +29,17 @@ export class ProductFormComponent implements OnInit {
     private fb: FormBuilder,
     private productService: ProductService,
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private notificationService: NotificationService // INJECTÉ
   ) {}
 
   ngOnInit(): void {
     this.initForm();
     this.route.paramMap.subscribe(params => {
-      const id = params.get('id'); // id est une string ou null
+      const id = params.get('id');
       if (id) {
         this.isEditMode = true;
-        this.productIdToEdit = id; // Assigner la string directement
+        this.productIdToEdit = id;
         this.pageTitle = 'Modifier le produit';
         this.loadProductDataForEdit(this.productIdToEdit);
       } else {
@@ -59,19 +61,20 @@ export class ProductFormComponent implements OnInit {
     });
   }
 
-  loadProductDataForEdit(id: string): void { // CHANGEMENT ICI: id: number -> id: string
+  loadProductDataForEdit(id: string): void {
     this.isLoading = true;
-    this.productService.getProductById(id).subscribe({ // id est une string
+    this.productService.getProductById(id).subscribe({
       next: (product) => {
         if (product) {
           this.productForm.patchValue(product);
         } else {
-          console.error('Produit non trouvé pour modification ! ID:', id);
+          this.notificationService.show(`Produit avec ID ${id} non trouvé.`, 'error');
           this.router.navigate(['/products']);
         }
         this.isLoading = false;
       },
       error: (err) => {
+        this.notificationService.show(`Erreur chargement produit: ${err.message}`, 'error');
         console.error('Erreur lors du chargement du produit pour édition', err);
         this.router.navigate(['/products']);
         this.isLoading = false;
@@ -84,15 +87,16 @@ export class ProductFormComponent implements OnInit {
   onSubmit(): void {
     if (this.productForm.invalid) {
       this.productForm.markAllAsTouched();
+      this.notificationService.show('Veuillez corriger les erreurs du formulaire.', 'warning');
       return;
     }
 
     this.isLoading = true;
     const formValues = this.productForm.value;
 
-    if (this.isEditMode && this.productIdToEdit !== null) { // productIdToEdit est une string
+    if (this.isEditMode && this.productIdToEdit !== null) {
       const productToUpdate: Product = {
-        id: this.productIdToEdit, // C'est une string
+        id: this.productIdToEdit,
         name: formValues.name,
         description: formValues.description,
         price: formValues.price,
@@ -103,11 +107,13 @@ export class ProductFormComponent implements OnInit {
       this.productService.updateProduct(productToUpdate).subscribe({
         next: () => {
           this.isLoading = false;
-          this.router.navigate(['/product', this.productIdToEdit]); // productIdToEdit est une string
+          this.notificationService.show('Produit mis à jour avec succès !', 'success');
+          this.router.navigate(['/product', this.productIdToEdit]);
         },
         error: (err) => {
-          console.error('Erreur lors de la mise à jour', err);
           this.isLoading = false;
+          this.notificationService.show(`Erreur lors de la mise à jour: ${err.message}`, 'error');
+          console.error('Erreur lors de la mise à jour', err);
         }
       });
     } else {
@@ -120,18 +126,20 @@ export class ProductFormComponent implements OnInit {
         stock: (formValues.stock !== null && formValues.stock !== undefined) ? formValues.stock : undefined,
       };
       this.productService.addProduct(productToAdd).subscribe({
-        next: (newProduct) => { // newProduct.id sera une string
+        next: (newProduct) => {
           this.isLoading = false;
+          this.notificationService.show('Produit ajouté avec succès !', 'success');
           if (newProduct && newProduct.id) {
-            this.router.navigate(['/product', newProduct.id]); // newProduct.id est une string
+            this.router.navigate(['/product', newProduct.id]);
           } else {
-            console.error('Formulaire: ID du nouveau produit manquant après ajout ! Redirection vers la liste.');
+            this.notificationService.show("Erreur: L'ID du nouveau produit n'a pas été retourné.", "error");
             this.router.navigate(['/products']);
           }
         },
         error: (err) => {
-          console.error('Erreur lors de ajout', err);
           this.isLoading = false;
+          this.notificationService.show(`Erreur lors de l'ajout: ${err.message}`, 'error');
+          console.error('Erreur lors de ajout', err);
         }
       });
     }
