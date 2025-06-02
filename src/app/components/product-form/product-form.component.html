@@ -4,14 +4,13 @@
 
   <div *ngIf="isLoading && isEditMode" class="text-center my-3">
     <p>Chargement du produit...</p>
-    <!-- Spinner Bootstrap -->
     <div class="spinner-border text-primary" role="status">
       <span class="visually-hidden">Loading...</span>
     </div>
   </div>
 
   <form [formGroup]="productForm" (ngSubmit)="onSubmit()" *ngIf="!isLoading">
-    <!-- Champ Nom -->
+    <!-- Champ Nom (inchangé) -->
     <div class="mb-3">
       <label for="name" class="form-label">Nom du produit</label>
       <input type="text" id="name" class="form-control" formControlName="name"
@@ -22,7 +21,7 @@
       </div>
     </div>
 
-    <!-- Champ Description -->
+    <!-- Champ Description (inchangé) -->
     <div class="mb-3">
       <label for="description" class="form-label">Description</label>
       <textarea id="description" class="form-control" formControlName="description" rows="3"
@@ -33,7 +32,7 @@
       </div>
     </div>
 
-    <!-- Champ Prix -->
+    <!-- Champ Prix (inchangé) -->
     <div class="mb-3">
       <label for="price" class="form-label">Prix</label>
       <input type="number" id="price" class="form-control" formControlName="price"
@@ -44,7 +43,7 @@
       </div>
     </div>
 
-    <!-- Champ Image URL -->
+    <!-- Champ Image URL (inchangé) -->
     <div class="mb-3">
       <label for="imageUrl" class="form-label">URL de l'image (optionnel)</label>
       <input type="text" id="imageUrl" class="form-control" formControlName="imageUrl"
@@ -54,13 +53,13 @@
       </div>
     </div>
 
-    <!-- Champ Catégorie -->
+    <!-- Champ Catégorie (inchangé) -->
     <div class="mb-3">
       <label for="category" class="form-label">Catégorie (optionnel)</label>
       <input type="text" id="category" class="form-control" formControlName="category">
     </div>
 
-    <!-- Champ Stock -->
+    <!-- Champ Stock (inchangé) -->
     <div class="mb-3">
       <label for="stock" class="form-label">Stock (optionnel)</label>
       <input type="number" id="stock" class="form-control" formControlName="stock"
@@ -72,10 +71,16 @@
 
     <div class="mt-4">
       <button type="submit" class="btn btn-success me-2" [disabled]="productForm.invalid || isLoading">
-        <span *ngIf="isLoading && !isEditMode" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+        <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
         {{ isEditMode ? 'Mettre à jour' : 'Ajouter le produit' }}
       </button>
-      <button type="button" class="btn btn-secondary" routerLink="/products">Annuler</button>
+      <!-- NOUVEAU BOUTON RÉINITIALISER -->
+      <button type="button" class="btn btn-outline-warning me-2" (click)="onResetForm()" [disabled]="isLoading">
+        Réinitialiser
+      </button>
+      <button type="button" class="btn btn-secondary" routerLink="/products" [disabled]="isLoading">
+        Annuler
+      </button>
     </div>
   </form>
 </div>

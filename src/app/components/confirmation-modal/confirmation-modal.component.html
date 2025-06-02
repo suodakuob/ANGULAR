@@ -8,7 +8,7 @@
         <button type="button" class="btn-close" (click)="onCancel()" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <p>{{ message }}</p>
+        <ng-content></ng-content> <!-- CONTENU PROJETÉ ICI -->
       </div>
       <div class="modal-footer">
         <button type="button" class="btn {{ cancelButtonClass }}" (click)="onCancel()">{{ cancelButtonText }}</button>

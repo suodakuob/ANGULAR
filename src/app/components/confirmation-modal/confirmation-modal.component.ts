@@ -11,10 +11,10 @@ import { CommonModule } from '@angular/common';
 })
 export class ConfirmationModalComponent {
   @Input() title: string = 'Confirmation';
-  @Input() message: string = 'Êtes-vous sûr de vouloir effectuer cette action ?';
+  // @Input() message: string = 'Êtes-vous sûr de vouloir effectuer cette action ?'; // SUPPRIMÉ
   @Input() confirmButtonText: string = 'Confirmer';
   @Input() cancelButtonText: string = 'Annuler';
-  @Input() confirmButtonClass: string = 'btn-danger'; // ex: btn-danger, btn-warning
+  @Input() confirmButtonClass: string = 'btn-danger';
   @Input() cancelButtonClass: string = 'btn-secondary';
 
   @Output() confirmed = new EventEmitter<boolean>();

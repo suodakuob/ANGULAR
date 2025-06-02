@@ -5,7 +5,7 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angula
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { Product } from '../../models/product';
 import { ProductService } from '../../services/product.service';
-import { NotificationService } from '../../services/notification.service'; // IMPORTÉ
+import { NotificationService } from '../../services/notification.service';
 
 @Component({
   selector: 'app-product-form',
@@ -24,13 +24,14 @@ export class ProductFormComponent implements OnInit {
   productIdToEdit: string | null = null;
   isLoading: boolean = true;
   pageTitle: string = 'Chargement...';
+  originalProductDataForEdit: Partial<Product> | null = null; // Pour stocker les données originales en mode édition
 
   constructor(
     private fb: FormBuilder,
     private productService: ProductService,
     private router: Router,
     private route: ActivatedRoute,
-    private notificationService: NotificationService // INJECTÉ
+    private notificationService: NotificationService
   ) {}
 
   ngOnInit(): void {
@@ -45,6 +46,8 @@ export class ProductFormComponent implements OnInit {
       } else {
         this.isEditMode = false;
         this.pageTitle = 'Ajouter un nouveau produit';
+        this.productForm.reset(); // Assurer que le formulaire est vide en mode ajout
+        this.originalProductDataForEdit = null; // Pas de données originales en mode ajout
         this.isLoading = false;
       }
     });
@@ -66,15 +69,24 @@ export class ProductFormComponent implements OnInit {
     this.productService.getProductById(id).subscribe({
       next: (product) => {
         if (product) {
-          this.productForm.patchValue(product);
+          // Stocker les données originales avant de patcher le formulaire
+          this.originalProductDataForEdit = {
+            name: product.name,
+            description: product.description,
+            price: product.price,
+            imageUrl: product.imageUrl,
+            category: product.category,
+            stock: product.stock
+          };
+          this.productForm.patchValue(this.originalProductDataForEdit);
         } else {
-          this.notificationService.show(`Produit avec ID ${id} non trouvé.`, 'error');
+          this.notificationService.showError(`Produit avec ID ${id} non trouvé.`);
           this.router.navigate(['/products']);
         }
         this.isLoading = false;
       },
       error: (err) => {
-        this.notificationService.show(`Erreur chargement produit: ${err.message}`, 'error');
+        this.notificationService.showError(`Erreur chargement produit: ${err.message}`);
         console.error('Erreur lors du chargement du produit pour édition', err);
         this.router.navigate(['/products']);
         this.isLoading = false;
@@ -87,7 +99,7 @@ export class ProductFormComponent implements OnInit {
   onSubmit(): void {
     if (this.productForm.invalid) {
       this.productForm.markAllAsTouched();
-      this.notificationService.show('Veuillez corriger les erreurs du formulaire.', 'warning');
+      this.notificationService.showWarning('Veuillez corriger les erreurs du formulaire.');
       return;
     }
 
@@ -107,13 +119,12 @@ export class ProductFormComponent implements OnInit {
       this.productService.updateProduct(productToUpdate).subscribe({
         next: () => {
           this.isLoading = false;
-          this.notificationService.show('Produit mis à jour avec succès !', 'success');
+          this.notificationService.showSuccess('Produit mis à jour avec succès !');
           this.router.navigate(['/product', this.productIdToEdit]);
         },
         error: (err) => {
           this.isLoading = false;
-          this.notificationService.show(`Erreur lors de la mise à jour: ${err.message}`, 'error');
-          console.error('Erreur lors de la mise à jour', err);
+          this.notificationService.showError(`Erreur lors de la mise à jour: ${err.message}`);
         }
       });
     } else {
@@ -128,20 +139,46 @@ export class ProductFormComponent implements OnInit {
       this.productService.addProduct(productToAdd).subscribe({
         next: (newProduct) => {
           this.isLoading = false;
-          this.notificationService.show('Produit ajouté avec succès !', 'success');
+          this.notificationService.showSuccess('Produit ajouté avec succès !');
           if (newProduct && newProduct.id) {
             this.router.navigate(['/product', newProduct.id]);
           } else {
-            this.notificationService.show("Erreur: L'ID du nouveau produit n'a pas été retourné.", "error");
+            this.notificationService.showError("Erreur: L'ID du nouveau produit n'a pas été retourné.");
             this.router.navigate(['/products']);
           }
         },
         error: (err) => {
           this.isLoading = false;
-          this.notificationService.show(`Erreur lors de l'ajout: ${err.message}`, 'error');
-          console.error('Erreur lors de ajout', err);
+          this.notificationService.showError(`Erreur lors de l'ajout: ${err.message}`);
         }
       });
     }
+  }
+
+  // NOUVELLE MÉTHODE POUR RÉINITIALISER LE FORMULAIRE
+  onResetForm(): void {
+    if (this.isEditMode && this.originalProductDataForEdit) {
+      // Si en mode édition, réinitialiser avec les données originales du produit
+      this.productForm.reset(this.originalProductDataForEdit);
+      this.notificationService.showInfo("Champs réinitialisés aux valeurs d'origine.");
+    } else {
+      // Si en mode ajout, réinitialiser à un formulaire vide
+      this.productForm.reset();
+      // Tu peux aussi explicitement remettre des valeurs par défaut si besoin:
+      // this.productForm.reset({
+      //   name: '',
+      //   description: '',
+      //   price: null,
+      //   imageUrl: '',
+      //   category: '',
+      //   stock: null
+      // });
+      this.notificationService.showInfo("Formulaire vidé.");
+    }
+    // Optionnel: Si tu veux aussi "nettoyer" l'état "touched" des champs pour cacher les erreurs de validation
+    // Object.keys(this.productForm.controls).forEach(key => {
+    //   this.productForm.get(key)?.markAsUntouched();
+    //   this.productForm.get(key)?.markAsPristine();
+    // });
   }
 }

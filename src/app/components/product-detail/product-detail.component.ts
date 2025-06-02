@@ -6,7 +6,8 @@ import { Product } from '../../models/product';
 import { ProductService } from '../../services/product.service';
 import { StockStatusPipe } from '../../pipes/stock-status.pipe';
 import { NotificationService } from '../../services/notification.service';
-import { ConfirmationModalComponent } from '../confirmation-modal/confirmation-modal.component'; // <--- IMPORTÉ
+import { ConfirmationModalComponent } from '../confirmation-modal/confirmation-modal.component';
+import { TruncateTextPipe } from '../../pipes/truncate-text.pipe';
 
 @Component({
   selector: 'app-product-detail',
@@ -15,7 +16,8 @@ import { ConfirmationModalComponent } from '../confirmation-modal/confirmation-m
     CommonModule,
     RouterModule,
     StockStatusPipe,
-    ConfirmationModalComponent // <--- AJOUTÉ AUX IMPORTS
+    ConfirmationModalComponent,
+    TruncateTextPipe
   ],
   templateUrl: './product-detail.component.html',
   styleUrls: ['./product-detail.component.css']
@@ -26,10 +28,9 @@ export class ProductDetailComponent implements OnInit {
   errorMessage: string = '';
   isDeleting: boolean = false;
 
-  // Pour la modale de confirmation
   showDeleteConfirmationModal: boolean = false;
-  modalMessage: string = '';
-  productToDeleteName: string = ''; // Pour stocker le nom pour le message de la modale
+  // modalMessage: string = ''; // SUPPRIMÉ, le message est dans le template parent
+  productToDeleteName: string = ''; // Gardé pour construire le message dans le template parent
 
   constructor(
     private route: ActivatedRoute,
@@ -56,7 +57,6 @@ export class ProductDetailComponent implements OnInit {
           this.isLoading = false;
           this.errorMessage = err.message || `Impossible de charger le produit avec l'id ${productIdParam}.`;
           this.notificationService.showError(this.errorMessage);
-          console.error('ProductDetailComponent: Erreur lors du chargement du produit:', err);
         }
       });
     } else {
@@ -69,20 +69,18 @@ export class ProductDetailComponent implements OnInit {
 
   triggerDeleteConfirmation(): void {
     if (this.product) {
-      this.productToDeleteName = this.product.name; // Stocker le nom
-      this.modalMessage = `Êtes-vous sûr de vouloir supprimer le produit "${this.product.name}" ?`;
+      this.productToDeleteName = this.product.name; // Toujours utile pour le message projeté
       this.showDeleteConfirmationModal = true;
     }
   }
 
   handleDeleteConfirmation(confirmed: boolean): void {
-    this.showDeleteConfirmationModal = false; // Toujours cacher la modale après une action
+    this.showDeleteConfirmationModal = false;
     if (confirmed && this.product && this.product.id) {
       this.isDeleting = true;
       this.productService.deleteProduct(this.product.id).subscribe({
         next: () => {
           this.isDeleting = false;
-          // Utiliser productToDeleteName car this.product pourrait devenir undefined si on navigue trop vite
           this.notificationService.showSuccess(`Produit "${this.productToDeleteName}" supprimé avec succès.`);
           this.router.navigate(['/products']);
         },
@@ -91,7 +89,6 @@ export class ProductDetailComponent implements OnInit {
           const deleteErrorMessage = err.message || `Erreur lors de la suppression du produit "${this.productToDeleteName}".`;
           this.notificationService.showError(deleteErrorMessage);
           this.errorMessage = deleteErrorMessage;
-          console.error(err);
         }
       });
     }

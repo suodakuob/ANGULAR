@@ -11,13 +11,13 @@
     <div class="row">
       <div class="col-md-6">
         <img *ngIf="product.imageUrl" [src]="product.imageUrl" class="img-fluid rounded mb-3" alt="{{ product.name }}" />
-        <div *ngIf="!product.imageUrl" class="text-center bg-light p-5 rounded mb-3">
-          <span class="text-muted fs-3">Pas d'image disponible</span>
+        <div *ngIf="!product.imageUrl" class="text-center bg-light p-5 rounded mb-3 d-flex align-items-center justify-content-center" style="height: 300px;">
+          <i class="bi bi-image text-muted" style="font-size: 5rem;"></i>
         </div>
       </div>
       <div class="col-md-6">
         <h2>{{ product.name }}</h2>
-        <p class="lead">{{ product.description }}</p>
+        <p class="lead">{{ product.description | truncateText:250 }}</p>
         <p><strong>Prix :</strong> {{ product.price | currency:'EUR':'symbol' }}</p>
         <p><strong>Catégorie :</strong> {{ product.category || 'Non catégorisé' }}</p>
         <p>
@@ -34,7 +34,6 @@
         <hr />
         <button class="btn btn-outline-secondary me-2" routerLink="/products">Retour à la liste</button>
         <a [routerLink]="['/product', product.id, 'edit']" class="btn btn-warning me-2">Modifier</a>
-        <!-- MODIFIÉ : Bouton appelle triggerDeleteConfirmation -->
         <button class="btn btn-danger" (click)="triggerDeleteConfirmation()" [disabled]="isDeleting">
           <span *ngIf="isDeleting" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
           {{ isDeleting ? 'Suppression...' : 'Supprimer' }}
@@ -51,13 +50,15 @@
   </div>
 </div>
 
-<!-- MODALE DE CONFIRMATION -->
+<!-- MODALE DE CONFIRMATION AVEC CONTENU PROJETÉ -->
 <app-confirmation-modal
   *ngIf="showDeleteConfirmationModal"
   title="Confirmation de Suppression"
-  [message]="modalMessage"
   confirmButtonText="Oui, supprimer"
   cancelButtonText="Annuler"
   confirmButtonClass="btn-danger"
   (confirmed)="handleDeleteConfirmation($event)">
+  <!-- Contenu projeté ici -->
+  <p>Êtes-vous sûr de vouloir supprimer le produit "<strong>{{ productToDeleteName }}</strong>" ?</p>
+  <p class="text-danger small">Cette action est irréversible.</p>
 </app-confirmation-modal>
