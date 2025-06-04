@@ -75,6 +75,6 @@
   confirmButtonClass="btn-danger"
   (confirmed)="handleDeleteConfirmationFromList($event)">
   <!-- Contenu projeté ici -->
-  <p>Êtes-vous sûr de vouloir supprimer le produit "<strong>{{ productToDelete?.name }}</strong>" ?</p>
+  <p>Êtes-vous sûr de vouloir supprimer le produit "<strong>{{ productToDelete.name }}</strong>" ?</p>
   <p class="text-danger small">Cette action est irréversible.</p>
 </app-confirmation-modal>
