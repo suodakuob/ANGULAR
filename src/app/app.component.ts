@@ -1,8 +1,8 @@
 // src/app/app.component.ts
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterOutlet, RouterModule } from '@angular/router'; // RouterModule pour routerLink
-import { NotificationComponent } from './components/notification/notification.component'; // S'assurer qu'il est importé
+import { Router, RouterOutlet, RouterModule } from '@angular/router';
+import { NotificationComponent } from './components/notification/notification.component';
 import { AuthService } from './services/auth.service';
 import { Observable } from 'rxjs';
 
@@ -12,16 +12,16 @@ import { Observable } from 'rxjs';
   imports: [
     CommonModule,
     RouterOutlet,
-    RouterModule, // Important pour [routerLink] et routerLinkActive
+    RouterModule,
     NotificationComponent
   ],
   templateUrl: './app.component.html',
-  styleUrls: ['./app.component.css'],
+  styleUrls: ['./app.component.css'], // Tu peux créer ce fichier pour des styles spécifiques à AppComponent
 })
 export class AppComponent implements OnInit {
   isLoggedIn$!: Observable<boolean>;
+  currentYear: number = new Date().getFullYear(); // Pour le footer
 
-  // Injection directe dans le constructeur rend authService disponible dans le template si public
   constructor(public authService: AuthService, private router: Router) {}
 
   ngOnInit() {
@@ -30,6 +30,5 @@ export class AppComponent implements OnInit {
 
   logout(): void {
     this.authService.logout();
-    // La redirection est gérée dans authService.logout()
   }
 }

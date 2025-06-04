@@ -1,5 +1,5 @@
 // src/app/components/confirmation-modal/confirmation-modal.component.ts
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
@@ -11,15 +11,12 @@ import { CommonModule } from '@angular/common';
 })
 export class ConfirmationModalComponent {
   @Input() title: string = 'Confirmation';
-  // @Input() message: string = 'Êtes-vous sûr de vouloir effectuer cette action ?'; // SUPPRIMÉ
+  @Input() message: string = ''; // Tu peux utiliser ng-content pour le message si tu préfères
   @Input() confirmButtonText: string = 'Confirmer';
   @Input() cancelButtonText: string = 'Annuler';
-  @Input() confirmButtonClass: string = 'btn-danger';
-  @Input() cancelButtonClass: string = 'btn-secondary';
+  @Input() confirmButtonClass: string = 'btn-primary';
 
   @Output() confirmed = new EventEmitter<boolean>();
-
-  constructor() {}
 
   onConfirm(): void {
     this.confirmed.emit(true);

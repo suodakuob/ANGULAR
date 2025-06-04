@@ -1,64 +1,79 @@
 <!-- src/app/components/product-detail/product-detail.component.html -->
-<div class="container mt-4">
-  <div *ngIf="isLoading" class="text-center">
-    <p>Chargement des détails du produit...</p>
-    <div class="spinner-border text-primary" role="status">
-      <span class="visually-hidden">Loading...</span>
-    </div>
+<div class="container my-5">
+  <div *ngIf="isLoading" class="text-center py-5">
+    <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status"><span class="visually-hidden">Chargement...</span></div>
+    <p class="mt-2 text-muted">Chargement des détails du produit...</p>
   </div>
 
-  <div *ngIf="!isLoading && product">
-    <div class="row">
-      <div class="col-md-6">
-        <img *ngIf="product.imageUrl" [src]="product.imageUrl" class="img-fluid rounded mb-3" alt="{{ product.name }}" />
-        <div *ngIf="!product.imageUrl" class="text-center bg-light p-5 rounded mb-3 d-flex align-items-center justify-content-center" style="height: 300px;">
+  <div *ngIf="errorMessage && !isLoading && !product" class="alert alert-danger" role="alert"><i class="bi bi-exclamation-triangle-fill me-2"></i><strong>Erreur :</strong> {{ errorMessage }}</div>
+
+  <div *ngIf="!isLoading && !errorMessage && product" class="card shadow-lg border-0">
+    <div class="row g-0">
+      <div class="col-md-5">
+        <img *ngIf="product.imageUrl" [src]="product.imageUrl" class="img-fluid rounded-start" alt="{{ product.name }}" style="object-fit: cover; height: 100%; min-height: 300px;">
+        <div *ngIf="!product.imageUrl" class="d-flex align-items-center justify-content-center bg-light rounded-start" style="height: 100%; min-height: 300px;">
           <i class="bi bi-image text-muted" style="font-size: 5rem;"></i>
         </div>
       </div>
-      <div class="col-md-6">
-        <h2>{{ product.name }}</h2>
-        <p class="lead">{{ product.description | truncateText:250 }}</p>
-        <p><strong>Prix :</strong> {{ product.price | currency:'EUR':'symbol' }}</p>
-        <p><strong>Catégorie :</strong> {{ product.category || 'Non catégorisé' }}</p>
-        <p>
-          <strong>Stock :</strong>
-          <span [ngClass]="{
-               'fw-bold text-danger': product.stock === 0,
+      <div class="col-md-7">
+        <div class="card-body p-4">
+          <h1 class="card-title display-6 mb-3">{{ product.name }}</h1>
+          <p class="card-text lead fs-6">{{ product.description }}</p>
+          <hr>
+          <div class="row mb-3">
+            <div class="col-sm-6">
+              <p class="card-text mb-1"><strong class="text-muted">Prix :</strong></p>
+              <h4 class="text-primary fw-bold">{{ product.price | currency:'EUR':'symbol' }}</h4>
+            </div>
+            <div class="col-sm-6">
+              <p class="card-text mb-1"><strong class="text-muted">Catégorie :</strong></p>
+              <h5><span class="badge bg-info text-dark">{{ product.category || 'Non catégorisé' }}</span></h5>
+            </div>
+          </div>
+           <p class="card-text mb-1"><strong class="text-muted">Disponibilité :</strong></p>
+           <h5 [ngClass]="{
+               'text-danger fw-bold': product.stock === 0,
                'text-warning': product.stock !== undefined && product.stock !== null && product.stock > 0 && product.stock <= 5,
                'text-success': product.stock !== undefined && product.stock !== null && product.stock > 5,
                'text-secondary': product.stock === null || product.stock === undefined
              }">
-            {{ product.stock | stockStatus }}
-          </span>
-        </p>
-        <hr />
-        <button class="btn btn-outline-secondary me-2" routerLink="/products">Retour à la liste</button>
-        <a [routerLink]="['/product', product.id, 'edit']" class="btn btn-warning me-2">Modifier</a>
-        <button class="btn btn-danger" (click)="triggerDeleteConfirmation()" [disabled]="isDeleting">
-          <span *ngIf="isDeleting" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-          {{ isDeleting ? 'Suppression...' : 'Supprimer' }}
-        </button>
+            {{ product.stock | stockStatus }} <!-- Utilisation de StockStatusPipe -->
+          </h5>
+          <hr>
+          <div class="mt-4">
+            <button class="btn btn-outline-secondary me-2" routerLink="/products">
+              <i class="bi bi-arrow-left-circle-fill me-1"></i>Retour
+            </button>
+            <a [routerLink]="['/product', product.id, 'edit']" class="btn btn-warning me-2">
+              <i class="bi bi-pencil-square me-1"></i>Modifier
+            </a>
+            <button class="btn btn-danger" (click)="triggerDeleteConfirmation()" [disabled]="isDeleting">
+              <span *ngIf="isDeleting" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+              <i *ngIf="!isDeleting" class="bi bi-trash3-fill me-1"></i>
+              {{ isDeleting ? 'Suppression...' : 'Supprimer' }}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
-  <div *ngIf="!isLoading && !product && !errorMessage" class="alert alert-danger mt-3" role="alert">
-    Le produit demandé n'a pas été trouvé.
-  </div>
-  <div *ngIf="errorMessage && !isLoading" class="alert alert-danger mt-3" role="alert">
-    <strong>Erreur :</strong> {{ errorMessage }}
+  <div *ngIf="!isLoading && !errorMessage && !product" class="alert alert-warning mt-3 text-center py-4">
+    <i class="bi bi-emoji-dizzy-fill display-4 text-muted mb-3"></i>
+    <p>Le produit demandé n'a pas été trouvé.</p>
+    <a routerLink="/products" class="btn btn-primary">Retourner à la liste des produits</a>
   </div>
 </div>
 
-<!-- MODALE DE CONFIRMATION AVEC CONTENU PROJETÉ -->
+<!-- MODALE DE CONFIRMATION - Correction de la syntaxe si nécessaire -->
 <app-confirmation-modal
-  *ngIf="showDeleteConfirmationModal"
-  title="Confirmation de Suppression"
-  confirmButtonText="Oui, supprimer"
-  cancelButtonText="Annuler"
-  confirmButtonClass="btn-danger"
-  (confirmed)="handleDeleteConfirmation($event)">
+  *ngIf="showDeleteConfirmationModal && productToDeleteFromDetail"
+  [title]="'Confirmation de Suppression'" 
+  [confirmButtonText]="'Oui, supprimer'"
+  [cancelButtonText]="'Annuler'"
+  [confirmButtonClass]="'btn-danger'"
+  (confirmed)="handleDeleteConfirmation($event)"> <!-- Événement output -->
   <!-- Contenu projeté ici -->
-  <p>Êtes-vous sûr de vouloir supprimer le produit "<strong>{{ productToDeleteName }}</strong>" ?</p>
+  <p>Êtes-vous sûr de vouloir supprimer le produit "<strong>{{ productToDeleteFromDetail.name }}</strong>" ?</p> <!-- Enlevé le ?. car productToDeleteFromDetail est vérifié dans *ngIf -->
   <p class="text-danger small">Cette action est irréversible.</p>
-</app-confirmation-modal>
+</app-confirmation-modal> <!-- S'assurer que la balise fermante est correcte -->

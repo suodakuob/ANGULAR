@@ -1,23 +1,6 @@
 {
   "products": [
     {
-      "id": "b123",
-      "name": "MacBook Promax",
-      "description": "Latest mod",
-      "price": 1500,
-      "imageUrl": "https://web-mobile-first.s3.eu-west-3.amazonaws.com/production/apple_macbook_pro_16_2021_capture_min_c3634ab041.jpg",
-      "category": "Laptops",
-      "stock": 5
-    },
-    {
-      "id": "c456",
-      "name": "iPhone 13",
-      "description": "Latest iPhone with improved camera",
-      "price": 999,
-      "category": "Phones",
-      "stock": 10
-    },
-    {
       "id": "d789",
       "name": "Apple Watch Series 7",
       "description": "Smartwatch with health tracking features",

@@ -3,10 +3,9 @@ import { Pipe, PipeTransform } from '@angular/core';
 
 @Pipe({
   name: 'stockStatus',
-  standalone: true // Important pour les pipes standalone
+  standalone: true
 })
 export class StockStatusPipe implements PipeTransform {
-
   transform(stock: number | undefined | null, lowStockThreshold: number = 5): string {
     if (stock === null || stock === undefined) {
       return 'N/A';
@@ -20,6 +19,6 @@ export class StockStatusPipe implements PipeTransform {
     if (stock > lowStockThreshold) {
       return `Disponible (${stock})`;
     }
-    return 'Statut inconnu'; // Au cas où
+    return 'Statut inconnu';
   }
 }

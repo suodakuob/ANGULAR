@@ -1,41 +1,57 @@
 <!-- src/app/components/product-list/product-list.component.html -->
-<div class="container mt-3">
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h2>Liste des Produits</h2>
-    <div>
-      <div class="btn-group me-2" role="group" aria-label="Boutons de tri">
-        <button type="button" class="btn btn-sm" [ngClass]="{'btn-primary': currentSortProperty === 'name', 'btn-outline-secondary': currentSortProperty !== 'name'}" (click)="setSort('name')">
-          Trier par Nom <span *ngIf="currentSortProperty === 'name'"><i class="bi" [ngClass]="{'bi-arrow-up': currentSortDirection === 'asc', 'bi-arrow-down': currentSortDirection === 'desc'}"></i></span>
+<div class="container-fluid mt-3">
+  <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+    <h2 class="page-title mb-0">Catalogue des Produits</h2>
+    <a routerLink="/product/new" class="btn btn-primary">
+      <i class="bi bi-plus-lg me-1"></i>Ajouter un produit
+    </a>
+  </div>
+
+  <div class="row mb-3 align-items-center">
+    <div class="col-md-8">
+      <input type="text"
+             class="form-control form-control-lg"
+             placeholder="Rechercher un produit..."
+             [formControl]="searchControl"> <!-- Correction : Balise input bien fermée -->
+    </div>
+    <div class="col-md-4 text-md-end mt-2 mt-md-0">
+      <div class="btn-group" role="group" aria-label="Boutons de tri">
+        <button type="button" class="btn btn-outline-secondary" [class.active]="currentSortProperty === 'name'" (click)="setSort('name')">
+          Nom <i *ngIf="currentSortProperty === 'name'" class="bi" [ngClass]="{'bi-sort-alpha-down': currentSortDirection === 'asc', 'bi-sort-alpha-up': currentSortDirection === 'desc'}"></i>
         </button>
-        <button type="button" class="btn btn-sm" [ngClass]="{'btn-primary': currentSortProperty === 'price', 'btn-outline-secondary': currentSortProperty !== 'price'}" (click)="setSort('price')">
-          Trier par Prix <span *ngIf="currentSortProperty === 'price'"><i class="bi" [ngClass]="{'bi-arrow-up': currentSortDirection === 'asc', 'bi-arrow-down': currentSortDirection === 'desc'}"></i></span>
+        <button type="button" class="btn btn-outline-secondary" [class.active]="currentSortProperty === 'price'" (click)="setSort('price')">
+          Prix <i *ngIf="currentSortProperty === 'price'" class="bi" [ngClass]="{'bi-sort-numeric-down': currentSortDirection === 'asc', 'bi-sort-numeric-up': currentSortDirection === 'desc'}"></i>
         </button>
       </div>
-      <a routerLink="/product/new" class="btn btn-success btn-sm">Ajouter un produit</a>
     </div>
   </div>
-  <div class="mb-3">
-    <input type="text" class="form-control" placeholder="Rechercher par nom, catégorie, description..." [formControl]="searchControl">
-  </div>
 
-  <div *ngIf="isLoading" class="text-center my-5">
-     <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Chargement...</span></div>
-     <p>Chargement des produits...</p>
+  <div *ngIf="isLoading" class="text-center my-5 py-5">
+     <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status"><span class="visually-hidden">Chargement...</span></div>
+     <p class="mt-2 text-muted">Chargement des produits...</p>
   </div>
-  <div *ngIf="errorMessage && !isLoading" class="alert alert-danger" role="alert"><strong>Erreur :</strong> {{ errorMessage }}</div>
+  <div *ngIf="errorMessage && !isLoading" class="alert alert-danger" role="alert"><i class="bi bi-exclamation-triangle-fill me-2"></i><strong>Erreur :</strong> {{ errorMessage }}</div>
 
-  <div class="row" *ngIf="!isLoading && !errorMessage && productsToDisplay.length > 0">
-    <div *ngFor="let product of productsToDisplay; trackBy: trackByProductId" class="col-md-4 mb-4">
-      <div class="card h-100">
-        <img *ngIf="product.imageUrl" [src]="product.imageUrl" class="card-img-top" alt="{{ product.name }}" style="height: 200px; object-fit: cover;" />
-        <div *ngIf="!product.imageUrl" class="card-img-top text-center bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
-          <i class="bi bi-image text-muted" style="font-size: 3rem;"></i>
+  <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-4" *ngIf="!isLoading && !errorMessage && productsToDisplay.length > 0">
+    <div *ngFor="let product of productsToDisplay; trackBy: trackByProductId" class="col">
+      <div class="card h-100 shadow-sm">
+        <div style="position: relative;">
+          <img *ngIf="product.imageUrl" [src]="product.imageUrl" class="card-img-top" alt="{{ product.name }}" style="height: 220px; object-fit: cover;" />
+          <div *ngIf="!product.imageUrl" class="card-img-top text-center bg-light d-flex align-items-center justify-content-center" style="height: 220px;">
+            <i class="bi bi-camera-fill text-muted" style="font-size: 4rem;"></i>
+          </div>
+          <span *ngIf="product.stock === 0" class="badge bg-danger position-absolute top-0 end-0 m-2">Épuisé</span>
+          <span *ngIf="product.stock && product.stock > 0 && product.stock <= 5" class="badge bg-warning text-dark position-absolute top-0 end-0 m-2">Stock Faible</span>
         </div>
         <div class="card-body d-flex flex-column">
           <h5 class="card-title">{{ product.name }}</h5>
-          <p class="card-text flex-grow-1">{{ product.description | truncateText:80 }}</p>
-          <p class="card-text"><strong>Prix :</strong> {{ product.price | currency:'EUR':'symbol' }}</p>
-          <p class="card-text"><small class="text-muted">Catégorie : {{ product.category || 'Non catégorisé' }}</small></p>
+          <!-- Utilisation de TruncateTextPipe -->
+          <p class="card-text small text-muted flex-grow-1">{{ product.description | truncateText:70 }}</p>
+          <div class="d-flex justify-content-between align-items-center mb-2">
+              <h6 class="card-subtitle text-muted">{{ product.category || 'Non catégorisé' }}</h6>
+              <h5 class="text-primary fw-bold mb-0">{{ product.price | currency:'EUR':'symbol' }}</h5>
+          </div>
+          <!-- Utilisation de StockStatusPipe -->
           <p class="card-text" [ngClass]="{
                'text-danger fw-bold': product.stock === 0,
                'text-warning': product.stock !== undefined && product.stock !== null && product.stock > 0 && product.stock <= 5,
@@ -44,20 +60,25 @@
              }">
             Stock : {{ product.stock | stockStatus }}
           </p>
-          <div class="mt-auto d-flex justify-content-between">
-            <a [routerLink]="['/product', product.id]" class="btn btn-primary btn-sm">Voir détails</a>
-            <button (click)="triggerDeleteConfirmationFromList(product)" class="btn btn-danger btn-sm">Supprimer</button>
-          </div>
+        </div>
+        <div class="card-footer bg-transparent border-top-0 d-flex justify-content-between">
+          <a [routerLink]="['/product', product.id]" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-eye-fill me-1"></i>Détails
+          </a>
+          <button (click)="triggerDeleteConfirmationFromList(product)" class="btn btn-outline-danger btn-sm">
+            <i class="bi bi-trash3-fill me-1"></i>Supprimer
+          </button>
         </div>
       </div>
     </div>
   </div>
 
- <div *ngIf="!isLoading && !errorMessage && productsToDisplay.length === 0">
-     <div *ngIf="allProductsMaster.length === 0" class="alert alert-info">La liste des produits est vide. Pensez à en ajouter !</div>
-     <div *ngIf="allProductsMaster.length > 0 && (searchControl.value || currentSortProperty)" class="alert alert-info">Aucun produit ne correspond à vos critères de recherche ou de tri.</div>
+ <div *ngIf="!isLoading && !errorMessage && productsToDisplay.length === 0" class="text-center py-5">
+     <i class="bi bi-emoji-frown display-4 text-muted mb-3"></i>
+     <p *ngIf="allProductsMaster.length === 0" class="text-muted">La liste des produits est vide. Pensez à en ajouter !</p>
+     <p *ngIf="allProductsMaster.length > 0 && (searchControl.value || currentSortProperty)" class="text-muted">Aucun produit ne correspond à vos critères.</p>
  </div>
- <nav *ngIf="!isLoading && !errorMessage && totalPages > 1" aria-label="Pagination des produits" class="mt-4 d-flex justify-content-center">
+ <nav *ngIf="!isLoading && !errorMessage && totalPages > 1 && productsToDisplay.length > 0" aria-label="Pagination des produits" class="mt-5 d-flex justify-content-center">
      <ul class="pagination">
      <li class="page-item" [class.disabled]="currentPage === 1"><a class="page-link" href="javascript:void(0)" (click)="goToPage(currentPage - 1)" aria-label="Précédent"><span aria-hidden="true">«</span></a></li>
      <li class="page-item" *ngFor="let pageNum of pages" [class.active]="pageNum === currentPage"><a class="page-link" href="javascript:void(0)" (click)="goToPage(pageNum)">{{ pageNum }}</a></li>
@@ -66,7 +87,7 @@
  </nav>
 </div>
 
-<!-- MODALE DE CONFIRMATION POUR LA LISTE AVEC CONTENU PROJETÉ -->
+<!-- MODALE DE CONFIRMATION -->
 <app-confirmation-modal
   *ngIf="showDeleteConfirmationModal && productToDelete"
   title="Confirmation de Suppression"
@@ -75,6 +96,7 @@
   confirmButtonClass="btn-danger"
   (confirmed)="handleDeleteConfirmationFromList($event)">
   <!-- Contenu projeté ici -->
+  <!-- CORRECTION : Enlever le ?. si productToDelete est garanti non null ici -->
   <p>Êtes-vous sûr de vouloir supprimer le produit "<strong>{{ productToDelete.name }}</strong>" ?</p>
   <p class="text-danger small">Cette action est irréversible.</p>
 </app-confirmation-modal>

@@ -1,86 +1,91 @@
 <!-- src/app/components/product-form/product-form.component.html -->
-<div class="container mt-4">
-  <h2>{{ pageTitle }}</h2>
+<div class="container my-5">
+  <div class="row justify-content-center">
+    <div class="col-md-8 col-lg-7">
+      <div class="card shadow-lg border-0">
+        <div class="card-header bg-primary text-white py-3">
+          <h2 class="mb-0 text-center page-title text-white border-0 pb-0"> <!-- page-title sans bordure ici -->
+            <i class="bi me-2" [ngClass]="isEditMode ? 'bi-pencil-square' : 'bi-plus-circle-dotted'"></i>
+            {{ pageTitle }}
+          </h2>
+        </div>
+        <div class="card-body p-4 p-md-5">
+          <div *ngIf="isLoading && isEditMode" class="text-center my-3">
+            <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>
+            <p class="mt-2 text-muted">Chargement du produit...</p>
+          </div>
 
-  <div *ngIf="isLoading && isEditMode" class="text-center my-3">
-    <p>Chargement du produit...</p>
-    <div class="spinner-border text-primary" role="status">
-      <span class="visually-hidden">Loading...</span>
+          <form [formGroup]="productForm" (ngSubmit)="onSubmit()" *ngIf="!isLoading" novalidate>
+            <!-- Champ Nom -->
+            <div class="mb-3">
+              <label for="name" class="form-label fw-medium">Nom du produit</label>
+              <input type="text" id="name" class="form-control" formControlName="name"
+                     [ngClass]="{ 'is-invalid': f['name'].touched && f['name'].errors }">
+              <div *ngIf="f['name'].touched && f['name'].errors" class="invalid-feedback">
+                <div *ngIf="f['name'].errors?.['required']">Le nom est requis.</div>
+                <div *ngIf="f['name'].errors?.['minlength']">Le nom doit contenir au moins 3 caractères.</div>
+              </div>
+            </div>
+
+            <!-- Champ Description -->
+            <div class="mb-3">
+              <label for="description" class="form-label fw-medium">Description</label>
+              <textarea id="description" class="form-control" formControlName="description" rows="4"
+                        [ngClass]="{ 'is-invalid': f['description'].touched && f['description'].errors }"></textarea>
+              <div *ngIf="f['description'].touched && f['description'].errors" class="invalid-feedback">
+                <div *ngIf="f['description'].errors?.['required']">La description est requise.</div>
+                <div *ngIf="f['description'].errors?.['maxlength']">La description ne doit pas dépasser 500 caractères.</div>
+              </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="price" class="form-label fw-medium">Prix (€)</label>
+                    <input type="number" id="price" class="form-control" formControlName="price"
+                            [ngClass]="{ 'is-invalid': f['price'].touched && f['price'].errors }">
+                    <div *ngIf="f['price'].touched && f['price'].errors" class="invalid-feedback">
+                        <div *ngIf="f['price'].errors?.['required']">Le prix est requis.</div>
+                        <div *ngIf="f['price'].errors?.['min']">Le prix doit être positif.</div>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="stock" class="form-label fw-medium">Stock (Unités)</label>
+                    <input type="number" id="stock" class="form-control" formControlName="stock"
+                            [ngClass]="{ 'is-invalid': f['stock'].touched && f['stock'].errors }">
+                    <div *ngIf="f['stock'].touched && f['stock'].errors" class="invalid-feedback">
+                        <div *ngIf="f['stock'].errors?.['min']">Le stock ne peut pas être négatif.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="category" class="form-label fw-medium">Catégorie</label>
+              <input type="text" id="category" class="form-control" formControlName="category">
+            </div>
+
+            <div class="mb-4"> <!-- mb-4 pour plus d'espace avant les boutons -->
+              <label for="imageUrl" class="form-label fw-medium">URL de l'image</label>
+              <input type="text" id="imageUrl" class="form-control" formControlName="imageUrl"
+                     [ngClass]="{ 'is-invalid': f['imageUrl'].touched && f['imageUrl'].errors }">
+              <div *ngIf="f['imageUrl'].touched && f['imageUrl'].errors" class="invalid-feedback">
+                <div *ngIf="f['imageUrl'].errors?.['pattern']">Veuillez entrer une URL valide.</div>
+              </div>
+              <img *ngIf="f['imageUrl'].value && !f['imageUrl'].errors" [src]="f['imageUrl'].value" alt="Aperçu" class="img-thumbnail mt-2" style="max-height: 150px;">
+            </div>
+
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+              <button type="button" class="btn btn-outline-secondary me-md-2" routerLink="/products">
+                <i class="bi bi-x-circle me-1"></i>Annuler
+              </button>
+              <button type="submit" class="btn btn-primary" [disabled]="productForm.invalid || (isLoading && !isEditMode)"> <!-- Désactivé pendant le chargement en mode ajout -->
+                <span *ngIf="isLoading && !isEditMode" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                <i *ngIf="!(isLoading && !isEditMode)" class="bi me-1" [ngClass]="isEditMode ? 'bi-check-circle-fill' : 'bi-plus-circle-fill'"></i>
+                {{ isEditMode ? 'Mettre à jour' : 'Ajouter le produit' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
     </div>
   </div>
-
-  <form [formGroup]="productForm" (ngSubmit)="onSubmit()" *ngIf="!isLoading">
-    <!-- Champ Nom (inchangé) -->
-    <div class="mb-3">
-      <label for="name" class="form-label">Nom du produit</label>
-      <input type="text" id="name" class="form-control" formControlName="name"
-             [ngClass]="{ 'is-invalid': f['name'].touched && f['name'].errors }">
-      <div *ngIf="f['name'].touched && f['name'].errors" class="invalid-feedback">
-        <div *ngIf="f['name'].errors?.['required']">Le nom est requis.</div>
-        <div *ngIf="f['name'].errors?.['minlength']">Le nom doit contenir au moins 3 caractères.</div>
-      </div>
-    </div>
-
-    <!-- Champ Description (inchangé) -->
-    <div class="mb-3">
-      <label for="description" class="form-label">Description</label>
-      <textarea id="description" class="form-control" formControlName="description" rows="3"
-                [ngClass]="{ 'is-invalid': f['description'].touched && f['description'].errors }"></textarea>
-      <div *ngIf="f['description'].touched && f['description'].errors" class="invalid-feedback">
-        <div *ngIf="f['description'].errors?.['required']">La description est requise.</div>
-        <div *ngIf="f['description'].errors?.['maxlength']">La description ne doit pas dépasser 500 caractères.</div>
-      </div>
-    </div>
-
-    <!-- Champ Prix (inchangé) -->
-    <div class="mb-3">
-      <label for="price" class="form-label">Prix</label>
-      <input type="number" id="price" class="form-control" formControlName="price"
-             [ngClass]="{ 'is-invalid': f['price'].touched && f['price'].errors }">
-      <div *ngIf="f['price'].touched && f['price'].errors" class="invalid-feedback">
-        <div *ngIf="f['price'].errors?.['required']">Le prix est requis.</div>
-        <div *ngIf="f['price'].errors?.['min']">Le prix doit être positif.</div>
-      </div>
-    </div>
-
-    <!-- Champ Image URL (inchangé) -->
-    <div class="mb-3">
-      <label for="imageUrl" class="form-label">URL de l'image (optionnel)</label>
-      <input type="text" id="imageUrl" class="form-control" formControlName="imageUrl"
-             [ngClass]="{ 'is-invalid': f['imageUrl'].touched && f['imageUrl'].errors }">
-      <div *ngIf="f['imageUrl'].touched && f['imageUrl'].errors" class="invalid-feedback">
-        <div *ngIf="f['imageUrl'].errors?.['pattern']">Veuillez entrer une URL valide.</div>
-      </div>
-    </div>
-
-    <!-- Champ Catégorie (inchangé) -->
-    <div class="mb-3">
-      <label for="category" class="form-label">Catégorie (optionnel)</label>
-      <input type="text" id="category" class="form-control" formControlName="category">
-    </div>
-
-    <!-- Champ Stock (inchangé) -->
-    <div class="mb-3">
-      <label for="stock" class="form-label">Stock (optionnel)</label>
-      <input type="number" id="stock" class="form-control" formControlName="stock"
-             [ngClass]="{ 'is-invalid': f['stock'].touched && f['stock'].errors }">
-      <div *ngIf="f['stock'].touched && f['stock'].errors" class="invalid-feedback">
-        <div *ngIf="f['stock'].errors?.['min']">Le stock ne peut pas être négatif.</div>
-      </div>
-    </div>
-
-    <div class="mt-4">
-      <button type="submit" class="btn btn-success me-2" [disabled]="productForm.invalid || isLoading">
-        <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-        {{ isEditMode ? 'Mettre à jour' : 'Ajouter le produit' }}
-      </button>
-      <!-- NOUVEAU BOUTON RÉINITIALISER -->
-      <button type="button" class="btn btn-outline-warning me-2" (click)="onResetForm()" [disabled]="isLoading">
-        Réinitialiser
-      </button>
-      <button type="button" class="btn btn-secondary" routerLink="/products" [disabled]="isLoading">
-        Annuler
-      </button>
-    </div>
-  </form>
 </div>

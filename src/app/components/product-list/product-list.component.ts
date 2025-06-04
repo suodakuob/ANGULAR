@@ -2,16 +2,16 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { FormsModule, ReactiveFormsModule, FormControl } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule, FormControl } from '@angular/forms'; // FormsModule n'est pas utilisé si searchControl est Reactive
 import { Subscription } from 'rxjs';
-import { debounceTime, distinctUntilChanged, tap } from 'rxjs/operators';
+import { debounceTime, distinctUntilChanged, tap, startWith } from 'rxjs/operators'; // Ajout de startWith
 
 import { Product } from '../../models/product';
 import { ProductService } from '../../services/product.service';
 import { NotificationService } from '../../services/notification.service';
-import { StockStatusPipe } from '../../pipes/stock-status.pipe';
-import { TruncateTextPipe } from '../../pipes/truncate-text.pipe';
-import { ConfirmationModalComponent } from '../confirmation-modal/confirmation-modal.component';
+import { StockStatusPipe } from '../../pipes/stock-status.pipe'; // Utilisé dans le template
+import { TruncateTextPipe } from '../../pipes/truncate-text.pipe'; // Utilisé dans le template
+import { ConfirmationModalComponent } from '../confirmation-modal/confirmation-modal.component'; // Utilisé dans le template
 
 @Component({
   selector: 'app-product-list',
@@ -19,32 +19,38 @@ import { ConfirmationModalComponent } from '../confirmation-modal/confirmation-m
   imports: [
     CommonModule,
     RouterModule,
-    FormsModule,
-    ReactiveFormsModule,
-    StockStatusPipe,
-    TruncateTextPipe,
-    ConfirmationModalComponent
+    ReactiveFormsModule, // Garder ReactiveFormsModule pour FormControl
+    StockStatusPipe,     // Doit être utilisé dans le template pour ne pas avoir d'avertissement
+    TruncateTextPipe,    // Doit être utilisé dans le template
+    ConfirmationModalComponent // Doit être utilisé dans le template
   ],
   templateUrl: './product-list.component.html',
   styleUrls: ['./product-list.component.css']
 })
 export class ProductListComponent implements OnInit, OnDestroy {
-  productsToDisplay: Product[] = [];
-  allProductsMaster: Product[] = [];
-  filteredAndSortedProducts: Product[] = [];
+  productsToDisplay: Product[] = []; // Ce qui est affiché après tri/filtre/pagination
+  allProductsMaster: Product[] = []; // La liste complète venant du service
   isLoading: boolean = true;
-  errorMessage: string = '';
+  errorMessage: string = ''; // Pour les erreurs de chargement
+
+  // Recherche
   searchControl = new FormControl('');
   private searchTermSub!: Subscription;
-  currentSortProperty: keyof Product | '' = '';
-  currentSortDirection: 'asc' | 'desc' = 'asc';
-  currentPage: number = 1;
-  itemsPerPage: number = 6;
-  totalPages: number = 0;
 
+  // Tri
+  currentSortProperty: keyof Product | '' = ''; // '' ou une clé de Product
+  currentSortDirection: 'asc' | 'desc' = 'asc';
+
+  // Pagination
+  currentPage: number = 1;
+  itemsPerPage: number = 8; // Nombre de produits par page
+  totalPages: number = 0;
+  pages: number[] = [];
+
+  // Pour la modale de confirmation
   showDeleteConfirmationModal: boolean = false;
-  // modalMessage: string = ''; // SUPPRIMÉ
   productToDelete: Product | null = null;
+
 
   constructor(
     private productService: ProductService,
@@ -53,13 +59,15 @@ export class ProductListComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadProducts();
+
     this.searchTermSub = this.searchControl.valueChanges.pipe(
-      tap(term => console.log('Terme de recherche:', term)),
+      startWith(''), // Pour appliquer le filtre initial (ou aucun filtre)
       debounceTime(300),
-      distinctUntilChanged()
+      distinctUntilChanged(),
+      tap(term => console.log('Terme de recherche:', term))
     ).subscribe(term => {
-      this.currentPage = 1;
-      this.applyFiltersSortAndPagination();
+      this.currentPage = 1; // Réinitialiser à la première page lors d'une nouvelle recherche
+      this.applyFiltersAndSort();
     });
   }
 
@@ -75,82 +83,99 @@ export class ProductListComponent implements OnInit, OnDestroy {
     this.productService.getProducts().subscribe({
       next: (data) => {
         this.allProductsMaster = data;
-        this.currentPage = 1;
-        this.applyFiltersSortAndPagination();
+        this.applyFiltersAndSort(); // Appliquer les filtres/tris/pagination initiaux
         this.isLoading = false;
       },
       error: (err) => {
         this.isLoading = false;
         this.errorMessage = err.message || 'Impossible de charger les produits.';
         this.notificationService.showError(this.errorMessage);
+        console.error(err);
       }
     });
   }
 
-  filterProducts(searchTerm: string): Product[] {
-    const lowerCaseTerm = searchTerm.toLowerCase();
-    if (!lowerCaseTerm) return [...this.allProductsMaster];
-    return this.allProductsMaster.filter(p => p.name.toLowerCase().includes(lowerCaseTerm) || (p.category && p.category.toLowerCase().includes(lowerCaseTerm)) || (p.description && p.description.toLowerCase().includes(lowerCaseTerm)));
-  }
+  applyFiltersAndSort(): void {
+    let filteredProducts = [...this.allProductsMaster];
+    const searchTerm = this.searchControl.value?.toLowerCase() || '';
 
-  setSort(property: keyof Product): void {
-    if (this.currentSortProperty === property) this.currentSortDirection = this.currentSortDirection === 'asc' ? 'desc' : 'asc';
-    else { this.currentSortProperty = property; this.currentSortDirection = 'asc'; }
-    this.currentPage = 1;
-    this.applyFiltersSortAndPagination();
-  }
+    // Filtrage
+    if (searchTerm) {
+      filteredProducts = this.allProductsMaster.filter(product =>
+        product.name.toLowerCase().includes(searchTerm) ||
+        (product.category && product.category.toLowerCase().includes(searchTerm)) ||
+        (product.description && product.description.toLowerCase().includes(searchTerm))
+      );
+    }
 
-  applyFiltersSortAndPagination(): void {
-    let processedProducts = this.filterProducts(this.searchControl.value || '');
+    // Tri
     if (this.currentSortProperty) {
-      const sortKey = this.currentSortProperty as keyof Product;
-      processedProducts.sort((a, b) => {
-        const valA = a[sortKey]; const valB = b[sortKey];
-        if ((valA === undefined || valA === null) && (valB === undefined || valB === null)) return 0;
-        if (valA === undefined || valA === null) return this.currentSortDirection === 'asc' ? 1 : -1;
-        if (valB === undefined || valB === null) return this.currentSortDirection === 'asc' ? -1 : 1;
-        let comp = 0; if (typeof valA === 'string' && typeof valB === 'string') comp = valA.localeCompare(valB);
-        else if (typeof valA === 'number' && typeof valB === 'number') comp = valA - valB;
-        return this.currentSortDirection === 'asc' ? comp : comp * -1;
+      filteredProducts.sort((a, b) => {
+        const valA = a[this.currentSortProperty as keyof Product];
+        const valB = b[this.currentSortProperty as keyof Product];
+
+        let comparison = 0;
+        if (valA === undefined || valA === null) comparison = -1;
+        else if (valB === undefined || valB === null) comparison = 1;
+        else if (valA > valB) comparison = 1;
+        else if (valA < valB) comparison = -1;
+
+        return this.currentSortDirection === 'asc' ? comparison : comparison * -1;
       });
     }
-    this.filteredAndSortedProducts = processedProducts;
-    this.totalPages = Math.ceil(this.filteredAndSortedProducts.length / this.itemsPerPage);
-    if (this.totalPages > 0 && this.currentPage > this.totalPages) this.currentPage = this.totalPages;
-    else if (this.totalPages === 0) this.currentPage = 1;
-    const start = (this.currentPage - 1) * this.itemsPerPage;
-    this.productsToDisplay = this.filteredAndSortedProducts.slice(start, start + this.itemsPerPage);
+
+    // Pagination
+    this.totalPages = Math.ceil(filteredProducts.length / this.itemsPerPage);
+    this.pages = Array.from({ length: this.totalPages }, (_, i) => i + 1);
+    const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+    this.productsToDisplay = filteredProducts.slice(startIndex, startIndex + this.itemsPerPage);
+
+    console.log('Produits à afficher (après filtre/tri/pagination):', this.productsToDisplay);
+    if (this.productsToDisplay.length === 0 && this.allProductsMaster.length > 0 && searchTerm) {
+        // Tu peux mettre un message spécifique si la recherche ne donne rien
+    }
+  }
+
+  setSort(property: keyof Product | ''): void {
+    if (this.currentSortProperty === property) {
+      this.currentSortDirection = this.currentSortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.currentSortProperty = property;
+      this.currentSortDirection = 'asc';
+    }
+    this.currentPage = 1; // Réinitialiser à la première page lors d'un nouveau tri
+    this.applyFiltersAndSort();
   }
 
   goToPage(page: number): void {
-     if (page >= 1 && page <= this.totalPages) { this.currentPage = page; this.applyFiltersSortAndPagination(); try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {} }
+    if (page >= 1 && page <= this.totalPages) {
+      this.currentPage = page;
+      this.applyFiltersAndSort();
+    }
   }
-  get pages(): number[] { const arr = []; for (let i = 1; i <= this.totalPages; i++) arr.push(i); return arr; }
-  trackByProductId(index: number, product: Product): string { return product.id; }
 
- triggerDeleteConfirmationFromList(product: Product): void {
-   this.productToDelete = product; // Toujours utile pour le message projeté
-   this.showDeleteConfirmationModal = true;
- }
+  trackByProductId(index: number, product: Product): string {
+    return product.id; // Utiliser un ID unique pour *ngFor trackBy
+  }
 
- handleDeleteConfirmationFromList(confirmed: boolean): void {
-   this.showDeleteConfirmationModal = false;
-   if (confirmed && this.productToDelete) {
-     const productName = this.productToDelete.name;
-     const productId = this.productToDelete.id;
-     this.productService.deleteProduct(productId).subscribe({
-       next: () => {
-         this.notificationService.showSuccess(`Produit "${productName}" supprimé.`);
-         if (this.productsToDisplay.length === 1 && this.currentPage > 1) {
-           this.currentPage--;
-         }
-         this.loadProducts();
-       },
-       error: (err) => {
-         this.notificationService.showError(`Erreur suppression de "${productName}": ${err.message}`);
-       }
-     });
-   }
-   this.productToDelete = null;
- }
+  triggerDeleteConfirmationFromList(product: Product): void {
+    this.productToDelete = product;
+    this.showDeleteConfirmationModal = true;
+  }
+
+  handleDeleteConfirmationFromList(confirmed: boolean): void {
+    if (confirmed && this.productToDelete) {
+      this.productService.deleteProduct(this.productToDelete.id).subscribe({
+        next: () => {
+          this.notificationService.showSuccess(`Produit "${this.productToDelete?.name}" supprimé.`);
+          this.loadProducts(); // Recharge tous les produits et réapplique les filtres/tris
+        },
+        error: (err) => {
+          this.notificationService.showError(`Erreur suppression : ${err.message}`);
+        }
+      });
+    }
+    this.showDeleteConfirmationModal = false;
+    this.productToDelete = null;
+  }
 }
