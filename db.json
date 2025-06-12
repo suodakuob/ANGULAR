@@ -5,6 +5,7 @@
       "name": "Apple Watch Series 7",
       "description": "Smartwatch with health tracking features",
       "price": 399,
+      "imageUrl": "https://web-mobile-first.s3.eu-west-3.amazonaws.com/production/apple_macbook_pro_16_2021_capture_min_c3634ab041.jpg",
       "category": "Wearables",
       "stock": 8
     },
@@ -63,6 +64,23 @@
       "price": 129,
       "category": "Accessories",
       "stock": 18
+    },
+    {
+      "id": "k123",
+      "name": "iPhone 13 Pro",
+      "description": "Latest iPhone with A15 chip and Pro camera system",
+      "price": 999,
+      "category": "Smartphones",
+      "stock": 10
+    },
+    {
+      "id": "l456",
+      "name": "MacBook Air (M1)",
+      "description": "Lightweight laptop with M1 chip",
+      "price": 999,
+      "category": "Laptops",
+      "stock": 5
     }
+ 
   ]
 }

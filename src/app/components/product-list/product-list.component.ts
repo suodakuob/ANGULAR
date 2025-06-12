@@ -2,16 +2,19 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { FormsModule, ReactiveFormsModule, FormControl } from '@angular/forms'; // FormsModule n'est pas utilisé si searchControl est Reactive
-import { Subscription } from 'rxjs';
-import { debounceTime, distinctUntilChanged, tap, startWith } from 'rxjs/operators'; // Ajout de startWith
+import { ReactiveFormsModule, FormControl } from '@angular/forms';
+import { Observable, Subscription } from 'rxjs';
+import { debounceTime, distinctUntilChanged, tap, startWith, map } from 'rxjs/operators';
 
 import { Product } from '../../models/product';
 import { ProductService } from '../../services/product.service';
 import { NotificationService } from '../../services/notification.service';
-import { StockStatusPipe } from '../../pipes/stock-status.pipe'; // Utilisé dans le template
-import { TruncateTextPipe } from '../../pipes/truncate-text.pipe'; // Utilisé dans le template
-import { ConfirmationModalComponent } from '../confirmation-modal/confirmation-modal.component'; // Utilisé dans le template
+import { CartService } from '../../services/cart.service';
+import { AuthService } from '../../services/auth.service'; // <--- IMPORTER
+import { StockStatusPipe } from '../../pipes/stock-status.pipe';
+import { TruncateTextPipe } from '../../pipes/truncate-text.pipe';
+import { ConfirmationModalComponent } from '../confirmation-modal/confirmation-modal.component';
+
 
 @Component({
   selector: 'app-product-list',
@@ -19,54 +22,57 @@ import { ConfirmationModalComponent } from '../confirmation-modal/confirmation-m
   imports: [
     CommonModule,
     RouterModule,
-    ReactiveFormsModule, // Garder ReactiveFormsModule pour FormControl
-    StockStatusPipe,     // Doit être utilisé dans le template pour ne pas avoir d'avertissement
-    TruncateTextPipe,    // Doit être utilisé dans le template
-    ConfirmationModalComponent // Doit être utilisé dans le template
+    ReactiveFormsModule,
+    StockStatusPipe,
+    TruncateTextPipe,
+    ConfirmationModalComponent
   ],
   templateUrl: './product-list.component.html',
   styleUrls: ['./product-list.component.css']
 })
 export class ProductListComponent implements OnInit, OnDestroy {
-  productsToDisplay: Product[] = []; // Ce qui est affiché après tri/filtre/pagination
-  allProductsMaster: Product[] = []; // La liste complète venant du service
+  productsToDisplay: Product[] = [];
+  allProductsMaster: Product[] = [];
   isLoading: boolean = true;
-  errorMessage: string = ''; // Pour les erreurs de chargement
+  errorMessage: string = '';
 
-  // Recherche
   searchControl = new FormControl('');
   private searchTermSub!: Subscription;
 
-  // Tri
-  currentSortProperty: keyof Product | '' = ''; // '' ou une clé de Product
+  currentSortProperty: keyof Product | '' = '';
   currentSortDirection: 'asc' | 'desc' = 'asc';
 
-  // Pagination
   currentPage: number = 1;
-  itemsPerPage: number = 8; // Nombre de produits par page
+  itemsPerPage: number = 8;
   totalPages: number = 0;
   pages: number[] = [];
 
-  // Pour la modale de confirmation
   showDeleteConfirmationModal: boolean = false;
   productToDelete: Product | null = null;
 
+  isAdmin$: Observable<boolean>; // <--- DÉCLARER
 
   constructor(
     private productService: ProductService,
-    private notificationService: NotificationService
-  ) { }
+    private notificationService: NotificationService,
+    private cartService: CartService,
+    private authService: AuthService // <--- INJECTER
+  ) {
+    this.isAdmin$ = this.authService.isAdmin$; // <--- INITIALISER
+  }
+
+  // ... (le reste du code de ProductListComponent reste le même que dans la version précédente que tu as) ...
+  // (ngOnInit, ngOnDestroy, loadProducts, applyFiltersAndSort, setSort, goToPage, trackBy, delete methods, addToCart)
 
   ngOnInit(): void {
     this.loadProducts();
-
     this.searchTermSub = this.searchControl.valueChanges.pipe(
-      startWith(''), // Pour appliquer le filtre initial (ou aucun filtre)
+      startWith(''),
       debounceTime(300),
       distinctUntilChanged(),
       tap(term => console.log('Terme de recherche:', term))
     ).subscribe(term => {
-      this.currentPage = 1; // Réinitialiser à la première page lors d'une nouvelle recherche
+      this.currentPage = 1;
       this.applyFiltersAndSort();
     });
   }
@@ -83,7 +89,7 @@ export class ProductListComponent implements OnInit, OnDestroy {
     this.productService.getProducts().subscribe({
       next: (data) => {
         this.allProductsMaster = data;
-        this.applyFiltersAndSort(); // Appliquer les filtres/tris/pagination initiaux
+        this.applyFiltersAndSort();
         this.isLoading = false;
       },
       error: (err) => {
@@ -99,7 +105,6 @@ export class ProductListComponent implements OnInit, OnDestroy {
     let filteredProducts = [...this.allProductsMaster];
     const searchTerm = this.searchControl.value?.toLowerCase() || '';
 
-    // Filtrage
     if (searchTerm) {
       filteredProducts = this.allProductsMaster.filter(product =>
         product.name.toLowerCase().includes(searchTerm) ||
@@ -108,32 +113,23 @@ export class ProductListComponent implements OnInit, OnDestroy {
       );
     }
 
-    // Tri
     if (this.currentSortProperty) {
       filteredProducts.sort((a, b) => {
         const valA = a[this.currentSortProperty as keyof Product];
         const valB = b[this.currentSortProperty as keyof Product];
-
         let comparison = 0;
         if (valA === undefined || valA === null) comparison = -1;
         else if (valB === undefined || valB === null) comparison = 1;
         else if (valA > valB) comparison = 1;
         else if (valA < valB) comparison = -1;
-
         return this.currentSortDirection === 'asc' ? comparison : comparison * -1;
       });
     }
 
-    // Pagination
     this.totalPages = Math.ceil(filteredProducts.length / this.itemsPerPage);
     this.pages = Array.from({ length: this.totalPages }, (_, i) => i + 1);
     const startIndex = (this.currentPage - 1) * this.itemsPerPage;
     this.productsToDisplay = filteredProducts.slice(startIndex, startIndex + this.itemsPerPage);
-
-    console.log('Produits à afficher (après filtre/tri/pagination):', this.productsToDisplay);
-    if (this.productsToDisplay.length === 0 && this.allProductsMaster.length > 0 && searchTerm) {
-        // Tu peux mettre un message spécifique si la recherche ne donne rien
-    }
   }
 
   setSort(property: keyof Product | ''): void {
@@ -143,7 +139,7 @@ export class ProductListComponent implements OnInit, OnDestroy {
       this.currentSortProperty = property;
       this.currentSortDirection = 'asc';
     }
-    this.currentPage = 1; // Réinitialiser à la première page lors d'un nouveau tri
+    this.currentPage = 1;
     this.applyFiltersAndSort();
   }
 
@@ -155,7 +151,7 @@ export class ProductListComponent implements OnInit, OnDestroy {
   }
 
   trackByProductId(index: number, product: Product): string {
-    return product.id; // Utiliser un ID unique pour *ngFor trackBy
+    return product.id;
   }
 
   triggerDeleteConfirmationFromList(product: Product): void {
@@ -168,7 +164,7 @@ export class ProductListComponent implements OnInit, OnDestroy {
       this.productService.deleteProduct(this.productToDelete.id).subscribe({
         next: () => {
           this.notificationService.showSuccess(`Produit "${this.productToDelete?.name}" supprimé.`);
-          this.loadProducts(); // Recharge tous les produits et réapplique les filtres/tris
+          this.loadProducts();
         },
         error: (err) => {
           this.notificationService.showError(`Erreur suppression : ${err.message}`);
@@ -177,5 +173,9 @@ export class ProductListComponent implements OnInit, OnDestroy {
     }
     this.showDeleteConfirmationModal = false;
     this.productToDelete = null;
+  }
+
+  addToCart(product: Product): void {
+    this.cartService.addToCart(product);
   }
 }

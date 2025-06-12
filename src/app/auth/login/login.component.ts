@@ -2,7 +2,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router'; // RouterModule pour routerLink si besoin dans le template
+import { Router, RouterModule, ActivatedRoute } from '@angular/router'; // ActivatedRoute pour returnUrl
 import { AuthService } from '../../services/auth.service';
 import { NotificationService } from '../../services/notification.service';
 
@@ -16,19 +16,26 @@ import { NotificationService } from '../../services/notification.service';
 export class LoginComponent implements OnInit {
   loginForm!: FormGroup;
   isLoading: boolean = false;
-  errorMessage: string = ''; // Pour afficher l'erreur sous le formulaire
+  errorMessage: string = '';
+  private returnUrl: string = '/products'; // URL par défaut après connexion
 
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
     private router: Router,
-    private notificationService: NotificationService // Pour les notifications globales
+    private route: ActivatedRoute, // Pour lire les queryParams
+    private notificationService: NotificationService
   ) {}
 
   ngOnInit(): void {
-    // Pré-remplir pour faciliter les tests, tu peux les enlever pour la version finale
+    // Récupérer l'URL de retour des queryParams
+    this.route.queryParams.subscribe(params => {
+      this.returnUrl = params['returnUrl'] || '/products';
+    });
+
     this.loginForm = this.fb.group({
-      email: ['test@example.com', [Validators.required, Validators.email]],
+      // Pré-remplir pour admin pour faciliter les tests pendant le développement
+      email: ['admin@example.com', [Validators.required, Validators.email]],
       password: ['password', [Validators.required]]
     });
   }
@@ -37,27 +44,25 @@ export class LoginComponent implements OnInit {
 
   onSubmit(): void {
     if (this.loginForm.invalid) {
-      this.loginForm.markAllAsTouched(); // Pour afficher les messages d'erreur des champs
+      this.loginForm.markAllAsTouched();
       this.notificationService.showError('Veuillez remplir correctement tous les champs.');
       return;
     }
 
     this.isLoading = true;
-    this.errorMessage = ''; // Réinitialiser le message d'erreur
+    this.errorMessage = '';
     const credentials = this.loginForm.value;
 
     this.authService.login(credentials).subscribe({
-      next: (isSuccess) => { // isSuccess sera true
+      next: (response) => { // La réponse contient {success: boolean, role: UserRole}
         this.isLoading = false;
-        this.notificationService.showSuccess('Connexion réussie !');
-        // Récupérer l'URL de retour si elle existe, sinon aller à /products
-        const returnUrl = this.router.routerState.snapshot.root.queryParams['returnUrl'] || '/products';
-        this.router.navigateByUrl(returnUrl);
+        this.notificationService.showSuccess(`Connexion réussie en tant que ${response.role} !`);
+        this.router.navigateByUrl(this.returnUrl); // Utiliser l'URL de retour
       },
-      error: (err) => { // L'erreur émise par throwError dans le service est capturée ici
+      error: (err) => {
         this.isLoading = false;
-        this.errorMessage = err.message || 'Erreur de connexion. Veuillez réessayer.'; // Afficher sous le formulaire
-        this.notificationService.showError(this.errorMessage); // Et en notification globale
+        this.errorMessage = err.message || 'Erreur de connexion. Veuillez réessayer.';
+        this.notificationService.showError(this.errorMessage);
         console.error('Login error:', err);
       }
     });

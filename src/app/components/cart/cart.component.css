@@ -1,0 +1,14 @@
+/* src/app/components/cart/cart.component.css */
+.cart-item-row:hover {
+  background-color: #f8f9fa; /* Léger fond au survol */
+}
+
+/* S'assurer que les inputs numériques n'ont pas les flèches par défaut si on utilise des boutons customs */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type=number] {
+  -moz-appearance: textfield; /* Firefox */
+}

@@ -2,7 +2,8 @@
 <div class="container-fluid mt-3">
   <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
     <h2 class="page-title mb-0">Catalogue des Produits</h2>
-    <a routerLink="/product/new" class="btn btn-primary">
+    <!-- MODIFIÉ: Afficher "Ajouter Produit" seulement si admin -->
+    <a *ngIf="isAdmin$ | async" routerLink="/product/new" class="btn btn-primary">
       <i class="bi bi-plus-lg me-1"></i>Ajouter un produit
     </a>
   </div>
@@ -12,7 +13,7 @@
       <input type="text"
              class="form-control form-control-lg"
              placeholder="Rechercher un produit..."
-             [formControl]="searchControl"> <!-- Correction : Balise input bien fermée -->
+             [formControl]="searchControl">
     </div>
     <div class="col-md-4 text-md-end mt-2 mt-md-0">
       <div class="btn-group" role="group" aria-label="Boutons de tri">
@@ -45,13 +46,11 @@
         </div>
         <div class="card-body d-flex flex-column">
           <h5 class="card-title">{{ product.name }}</h5>
-          <!-- Utilisation de TruncateTextPipe -->
           <p class="card-text small text-muted flex-grow-1">{{ product.description | truncateText:70 }}</p>
           <div class="d-flex justify-content-between align-items-center mb-2">
               <h6 class="card-subtitle text-muted">{{ product.category || 'Non catégorisé' }}</h6>
               <h5 class="text-primary fw-bold mb-0">{{ product.price | currency:'EUR':'symbol' }}</h5>
           </div>
-          <!-- Utilisation de StockStatusPipe -->
           <p class="card-text" [ngClass]="{
                'text-danger fw-bold': product.stock === 0,
                'text-warning': product.stock !== undefined && product.stock !== null && product.stock > 0 && product.stock <= 5,
@@ -61,11 +60,21 @@
             Stock : {{ product.stock | stockStatus }}
           </p>
         </div>
-        <div class="card-footer bg-transparent border-top-0 d-flex justify-content-between">
-          <a [routerLink]="['/product', product.id]" class="btn btn-outline-primary btn-sm">
-            <i class="bi bi-eye-fill me-1"></i>Détails
-          </a>
-          <button (click)="triggerDeleteConfirmationFromList(product)" class="btn btn-outline-danger btn-sm">
+        <div class="card-footer bg-transparent border-top-0">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <a [routerLink]="['/product', product.id]" class="btn btn-outline-primary btn-sm">
+              <i class="bi bi-eye-fill me-1"></i>Détails
+            </a>
+            <button class="btn btn-outline-success btn-sm"
+                    (click)="addToCart(product)"
+                    [disabled]="product.stock === 0">
+              <i class="bi bi-cart-plus-fill me-1"></i>
+              {{ product.stock === 0 ? 'Épuisé' : 'Ajouter' }}
+            </button>
+          </div>
+          <!-- MODIFIÉ: Afficher "Supprimer" seulement si admin -->
+          <button *ngIf="isAdmin$ | async" (click)="triggerDeleteConfirmationFromList(product)"
+                  class="btn btn-outline-danger btn-sm w-100">
             <i class="bi bi-trash3-fill me-1"></i>Supprimer
           </button>
         </div>
@@ -87,7 +96,6 @@
  </nav>
 </div>
 
-<!-- MODALE DE CONFIRMATION -->
 <app-confirmation-modal
   *ngIf="showDeleteConfirmationModal && productToDelete"
   title="Confirmation de Suppression"
@@ -95,8 +103,6 @@
   cancelButtonText="Annuler"
   confirmButtonClass="btn-danger"
   (confirmed)="handleDeleteConfirmationFromList($event)">
-  <!-- Contenu projeté ici -->
-  <!-- CORRECTION : Enlever le ?. si productToDelete est garanti non null ici -->
   <p>Êtes-vous sûr de vouloir supprimer le produit "<strong>{{ productToDelete.name }}</strong>" ?</p>
   <p class="text-danger small">Cette action est irréversible.</p>
 </app-confirmation-modal>
